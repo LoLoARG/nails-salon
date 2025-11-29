@@ -28,38 +28,38 @@ export default function NailSalonBooking() {
       id: 1,
       category: 'LISTA DE PRECIOS',
       items: [
-        { 
-          name: 'Semipermanentes', 
-          price: '$14.000', 
-          duration: '60 min', 
+        {
+          name: 'Semipermanentes',
+          price: '$14.000',
+          duration: '60 min',
           description: 'Esmaltado gel UV de larga duración',
           image: '/semipermanentes.jpg'
         },
-        { 
-          name: 'Kapping Gel', 
-          price: '$16.000', 
-          duration: '90 min', 
+        {
+          name: 'Kapping Gel',
+          price: '$16.000',
+          duration: '90 min',
           description: 'Refuerzo de uña natural con gel',
           image: '/kapping.jpg'
         },
-        { 
-          name: 'Soft Gel', 
-          price: '$16.000', 
-          duration: '90 min', 
+        {
+          name: 'Soft Gel',
+          price: '$16.000',
+          duration: '90 min',
           description: 'Sistema de uñas suaves y flexibles',
           image: '/softgel.jpg'
         },
-        { 
-          name: 'Arreglo por Uña', 
-          price: '$300', 
-          duration: '15 min', 
+        {
+          name: 'Arreglo por Uña',
+          price: '$300',
+          duration: '15 min',
           description: 'Reparación individual de uña',
           image: '/arreglo.jpg'
         },
-        { 
-          name: 'Retirado de Otro Salón', 
-          price: '$3.000 - $4.000', 
-          duration: '30 min', 
+        {
+          name: 'Retirado de Otro Salón',
+          price: '$3.000 - $4.000',
+          duration: '30 min',
           description: 'Retiro profesional de trabajos externos',
           image: '/retirado.jpg'
         }
@@ -77,7 +77,7 @@ export default function NailSalonBooking() {
       ]
     }
   ];
-    
+
 
 // Horarios por día de diciembre 2025
 const getHorariosPorDia = (fecha) => {
@@ -111,71 +111,73 @@ const getHorariosPorDia = (fecha) => {
     '2025-12-30': ['07:00', '09:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
     '2025-12-31': ['08:00', '10:00', '12:00']
   };
-  
+
   // Si es diciembre 2025, usar horarios específicos
   if (horariosDiciembre[fecha]) {
     return horariosDiciembre[fecha];
   }
-  
+
   // Para otros meses, usar horarios por defecto
   return ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 };
+
+  // Cargar turnos y horarios bloqueados cuando cambia la fecha
   useEffect(() => {
+    const loadBookedSlots = async () => {
+      try {
+        // Obtener horarios del día
+        const horariosDelDia = getHorariosPorDia(selectedDate);
+
+        // Cargar turnos confirmados
+        const turnosRef = collection(db, 'turnos');
+        const qTurnos = query(turnosRef, where('fecha', '==', selectedDate));
+        const turnosSnapshot = await getDocs(qTurnos);
+
+        const slots = [];
+        turnosSnapshot.forEach((doc) => {
+          slots.push(doc.data().hora);
+        });
+
+        // Cargar horarios bloqueados
+        const bloqueadosRef = collection(db, 'horarios_bloqueados');
+
+        // Bloqueos de día completo
+        const qDiaCompleto = query(
+          bloqueadosRef,
+          where('tipo', '==', 'dia_completo'),
+          where('fecha', '==', selectedDate)
+        );
+        const diaCompletoSnapshot = await getDocs(qDiaCompleto);
+
+        // Si el día está bloqueado completamente, bloquear todos los horarios
+        if (!diaCompletoSnapshot.empty) {
+          setBookedSlots(horariosDelDia);
+          return;
+        }
+
+        // Bloqueos de horarios específicos
+        const qHorarios = query(
+          bloqueadosRef,
+          where('tipo', '==', 'horario_especifico'),
+          where('fecha', '==', selectedDate)
+        );
+        const horariosSnapshot = await getDocs(qHorarios);
+
+        horariosSnapshot.forEach((doc) => {
+          slots.push(doc.data().hora);
+        });
+
+        setBookedSlots(slots);
+
+      } catch (error) {
+        console.error('Error al cargar turnos:', error);
+      }
+    };
+
     if (selectedDate) {
-      loadBookedSlots(selectedDate);
+      loadBookedSlots();
     }
   }, [selectedDate]);
-
-  const loadBookedSlots = async (date) => {
-    try {
-      // Obtener horarios del día
-      const horariosDelDia = getHorariosPorDia(date);
-      
-      // Cargar turnos confirmados
-      const turnosRef = collection(db, 'turnos');
-      const qTurnos = query(turnosRef, where('fecha', '==', date));
-      const turnosSnapshot = await getDocs(qTurnos);
-      
-      const slots = [];
-      turnosSnapshot.forEach((doc) => {
-        slots.push(doc.data().hora);
-      });
-      
-      // Cargar horarios bloqueados
-      const bloqueadosRef = collection(db, 'horarios_bloqueados');
-      
-      // Bloqueos de día completo
-      const qDiaCompleto = query(
-        bloqueadosRef,
-        where('tipo', '==', 'dia_completo'),
-        where('fecha', '==', date)
-      );
-      const diaCompletoSnapshot = await getDocs(qDiaCompleto);
-      
-      // Si el día está bloqueado completamente, bloquear todos los horarios
-      if (!diaCompletoSnapshot.empty) {
-        setBookedSlots(horariosDelDia);
-        return;
-      }
-      
-      // Bloqueos de horarios específicos
-      const qHorarios = query(
-        bloqueadosRef,
-        where('tipo', '==', 'horario_especifico'),
-        where('fecha', '==', date)
-      );
-      const horariosSnapshot = await getDocs(qHorarios);
-      
-      horariosSnapshot.forEach((doc) => {
-        slots.push(doc.data().hora);
-      });
-      
-      setBookedSlots(slots);
-      
-    } catch (error) {
-      console.error('Error al cargar turnos:', error);
-    }
-  };
 
   useEffect(() => {
     if (selectedService && dateRef.current) {
