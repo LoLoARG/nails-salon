@@ -267,22 +267,33 @@ useEffect(() => {
     };
 
     
-      const handlePaymentSuccess = async (paymentResult) => {
+    const handlePaymentSuccess = async (paymentResult) => {
       setLoading(true);
       
       try {
-        const service = getSelectedService();
+        // Recuperar datos del localStorage si no están en el estado
+        const turnoData = pendingTurnoData || JSON.parse(localStorage.getItem('pendingTurno'));
         
-        // Guardar el turno en Firebase CON seña pagada
+        if (!turnoData) {
+          throw new Error('No se encontraron datos del turno');
+        }
+        
+        const service = getSelectedService() || {
+          name: turnoData.servicio,
+          price: turnoData.precio,
+          duration: turnoData.duracion
+        };
+        
+        // Guardar el turno en Firebase
         await addDoc(collection(db, 'turnos'), {
-          servicio: pendingTurnoData.servicio,
-          precio: pendingTurnoData.precio,
-          duracion: pendingTurnoData.duracion,
-          fecha: pendingTurnoData.fecha,
-          hora: pendingTurnoData.hora,
-          clienteNombre: pendingTurnoData.clienteNombre,
-          clienteTelefono: pendingTurnoData.clienteTelefono,
-          senaPagada: 5000,
+          servicio: turnoData.servicio,
+          precio: turnoData.precio,
+          duracion: turnoData.duracion,
+          fecha: turnoData.fecha,
+          hora: turnoData.hora,
+          clienteNombre: turnoData.clienteNombre,
+          clienteTelefono: turnoData.clienteTelefono,
+          senaPagada: 100, // Cambiar a 5000 después de las pruebas
           estadoPago: 'aprobado',
           paymentId: paymentResult.id,
           timestamp: Timestamp.now()
@@ -291,23 +302,100 @@ useEffect(() => {
         // Enviar WhatsApp a April
         sendWhatsAppNotification(
           service, 
-          pendingTurnoData.fecha, 
-          pendingTurnoData.hora, 
-          pendingTurnoData.clienteNombre, 
-          pendingTurnoData.clienteTelefono
+          turnoData.fecha, 
+          turnoData.hora, 
+          turnoData.clienteNombre, 
+          turnoData.clienteTelefono
         );
+        
+        // Limpiar localStorage
+        localStorage.removeItem('pendingTurno');
         
         // Mostrar confirmación
         setShowPayment(false);
         setShowConfirmation(true);
         setLoading(false);
         
+        // Limpiar URL
+        window.history.replaceState({}, '', window.location.pathname);
+        
       } catch (error) {
         console.error('Error al guardar el turno:', error);
         alert('Error al confirmar el turno. Contactá al local.');
         setLoading(false);
       }
-      };
+    };
+
+// Detectar retorno de Mercado Pago
+useEffect(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const status = urlParams.get('status');
+  
+  if (status === 'success' || status === 'approved') {
+    const turnoGuardado = localStorage.getItem('pendingTurno');
+    
+    if (turnoGuardado) {
+      const turnoData = JSON.parse(turnoGuardado);
+      const paymentId = urlParams.get('payment_id') || urlParams.get('collection_id') || 'MP-' + Date.now();
+      
+      // Guardar turno y enviar WhatsApp
+      (async () => {
+        setLoading(true);
+        
+        try {
+          const service = {
+            name: turnoData.servicio,
+            price: turnoData.precio,
+            duration: turnoData.duracion
+          };
+          
+          // Guardar en Firebase
+          await addDoc(collection(db, 'turnos'), {
+            servicio: turnoData.servicio,
+            precio: turnoData.precio,
+            duracion: turnoData.duracion,
+            fecha: turnoData.fecha,
+            hora: turnoData.hora,
+            clienteNombre: turnoData.clienteNombre,
+            clienteTelefono: turnoData.clienteTelefono,
+            senaPagada: 100,
+            estadoPago: 'aprobado',
+            paymentId: paymentId,
+            timestamp: Timestamp.now()
+          });
+          
+          // Enviar WhatsApp
+          sendWhatsAppNotification(
+            service, 
+            turnoData.fecha, 
+            turnoData.hora, 
+            turnoData.clienteNombre, 
+            turnoData.clienteTelefono
+          );
+          
+          // Limpiar y mostrar confirmación
+          localStorage.removeItem('pendingTurno');
+          setSelectedService(turnoData.servicio);
+          setSelectedDate(turnoData.fecha);
+          setSelectedTime(turnoData.hora);
+          setCustomerName(turnoData.clienteNombre);
+          setCustomerPhone(turnoData.clienteTelefono);
+          setShowConfirmation(true);
+          setLoading(false);
+          
+          // Limpiar URL
+          window.history.replaceState({}, '', window.location.pathname);
+          
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Error al confirmar el turno');
+          setLoading(false);
+        }
+      })();
+    }
+  }
+}, []);
+
 
     const resetForm = () => {
       setSelectedService(null);
