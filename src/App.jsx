@@ -214,34 +214,38 @@ useEffect(() => {
   }
 }, []);
 
-    const sendWhatsAppNotification = (service, date, time, name, phone) => {
-      const aprilPhone = '5493624748712';
-      
-      const message = `🎉 *NUEVO TURNO CONFIRMADO* 🎉
+const sendWhatsAppNotification = (service, date, time, name, phone) => {
+  const aprilPhone = '5493624748712';
+  
+  const message = `🎉 *NUEVO TURNO CONFIRMADO* 🎉
 
-      💅 *Servicio:* ${service.name}
-      💰 *Precio:* ${service.price}
-      ⏱️ *Duración:* ${service.duration}
-      
-      📅 *Fecha:* ${new Date(date + 'T00:00:00').toLocaleDateString('es-AR', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })}
-      🕐 *Hora:* ${time} hs
-      
-      👤 *Cliente:* ${name}
-      📱 *Teléfono:* ${phone}
-      
-      💵 *SEÑA PAGADA: $5.000* ✅
-      
-      ---
-      _Reserva realizada desde la web_`;
+💅 *Servicio:* ${service.name}
+💰 *Precio:* ${service.price}
+⏱️ *Duración:* ${service.duration}
 
-      const whatsappUrl = `https://wa.me/${aprilPhone}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-    };
+📅 *Fecha:* ${new Date(date + 'T00:00:00').toLocaleDateString('es-AR', { 
+  weekday: 'long', 
+  year: 'numeric', 
+  month: 'long', 
+  day: 'numeric' 
+})}
+🕐 *Hora:* ${time} hs
+
+👤 *Cliente:* ${name}
+📱 *Teléfono:* ${phone}
+
+💵 *SEÑA PAGADA: $100* ✅
+
+---
+_Reserva realizada desde la web_`;
+
+  const whatsappUrl = `https://wa.me/${aprilPhone}?text=${encodeURIComponent(message)}`;
+  
+  // Usar setTimeout para evitar bloqueo de pop-ups
+  setTimeout(() => {
+    window.location.href = whatsappUrl;
+  }, 500);
+};
     const handleBooking = () => {
       if (selectedService && selectedDate && selectedTime && customerName && customerPhone) {
         const service = getSelectedService();
