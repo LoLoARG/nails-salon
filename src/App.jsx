@@ -295,40 +295,6 @@ const getHorariosPorDia = (fecha) => {
     }
      };
 
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          alert('¡Lo sentimos! Este horario acaba de ser reservado. Por favor elegí otro horario.');
-          setLoading(false);
-          loadBookedSlots(selectedDate);
-          setSelectedTime('');
-          return;
-        }
-        
-        await addDoc(collection(db, 'turnos'), {
-          servicio: service.name,
-          precio: service.price,
-          duracion: service.duration,
-          fecha: selectedDate,
-          hora: selectedTime,
-          clienteNombre: customerName,
-          clienteTelefono: customerPhone,
-          timestamp: Timestamp.now()
-        });
-        
-        sendWhatsAppNotification(service, selectedDate, selectedTime, customerName, customerPhone);
-        
-        setShowConfirmation(true);
-        setLoading(false);
-        
-      } catch (error) {
-        console.error('Error al guardar el turno:', error);
-        alert('Hubo un error al confirmar tu turno. Por favor intentá de nuevo.');
-        setLoading(false);
-      }
-    }
-  };
-
   const resetForm = () => {
     setSelectedService(null);
     setSelectedDate('');
