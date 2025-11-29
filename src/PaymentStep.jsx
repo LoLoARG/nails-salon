@@ -4,51 +4,71 @@ import { CreditCard, ArrowLeft, Loader2 } from 'lucide-react';
 export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [preferenceId, setPreferenceId] = useState(null);
 
   const SENA_FIJA = 5000; // Seña de $5.000 para todos
+  const ACCESS_TOKEN = import.meta.env.VITE_MP_ACCESS_TOKEN;
 
-  const onSubmit = async (formData) => {
+  const createPreference = async () => {
     setProcessing(true);
 
-    return new Promise((resolve, reject) => {
-      // NOTA: Esta es una simulación de pago
-      // Para pagos reales, necesitas configurar un backend que procese el pago con Mercado Pago
-
-      console.log('Datos del formulario de pago:', formData);
-
-      setTimeout(() => {
-        const mockPaymentResult = {
-          id: 'DEMO_PAYMENT_' + Date.now(),
-          status: 'approved',
-          transaction_amount: SENA_FIJA,
-          description: `Seña - ${turnoData.servicio}`,
-          payer: {
-            email: formData.payer?.email || turnoData.clienteEmail
-          },
-          metadata: {
-            servicio: turnoData.servicio,
-            fecha: turnoData.fecha,
-            hora: turnoData.hora,
-            clienteNombre: turnoData.clienteNombre,
-            clienteTelefono: turnoData.clienteTelefono
+    try {
+      const preference = {
+        items: [
+          {
+            title: `Seña - ${turnoData.servicio}`,
+            quantity: 1,
+            unit_price: SENA_FIJA,
+            currency_id: 'ARS'
           }
-        };
+        ],
+        payer: {
+          name: turnoData.clienteNombre,
+          email: turnoData.clienteEmail,
+          phone: {
+            number: turnoData.clienteTelefono
+          }
+        },
+        back_urls: {
+          success: window.location.origin + '/success',
+          failure: window.location.origin + '/failure',
+          pending: window.location.origin + '/pending'
+        },
+        auto_return: 'approved',
+        external_reference: JSON.stringify({
+          servicio: turnoData.servicio,
+          fecha: turnoData.fecha,
+          hora: turnoData.hora,
+          clienteNombre: turnoData.clienteNombre,
+          clienteTelefono: turnoData.clienteTelefono
+        }),
+        notification_url: 'https://tu-dominio.com/webhooks/mercadopago' // Cambiar por tu URL real
+      };
 
-        setPaymentStatus('approved');
+      const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        },
+        body: JSON.stringify(preference)
+      });
+
+      const data = await response.json();
+
+      if (data.id) {
+        // Redirigir a Mercado Pago
+        window.location.href = data.init_point;
+      } else {
+        console.error('Error creando preferencia:', data);
+        setPaymentStatus('error');
         setProcessing(false);
-
-        // Llamar a la función de éxito
-        setTimeout(() => {
-          onPaymentSuccess(mockPaymentResult);
-          resolve();
-        }, 1500);
-      }, 2000);
-    });
-  };
-
-  const onError = async (error) => {
-    console.error('Error:', error);
-    setPaymentStatus('error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setPaymentStatus('error');
+      setProcessing(false);
+    }
   };
 
   return (
@@ -90,17 +110,9 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
             </div>
 
             {/* Monto */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-400 rounded-2xl p-5 mb-4 text-white text-center">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-400 rounded-2xl p-5 mb-6 text-white text-center">
               <p className="text-sm mb-1">Seña a pagar:</p>
               <p className="text-4xl font-black">${SENA_FIJA.toLocaleString('es-AR')}</p>
-            </div>
-
-            {/* Aviso de modo prueba */}
-            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-4 mb-6">
-              <p className="text-yellow-900 font-bold text-sm">⚠️ MODO DEMOSTRACIÓN</p>
-              <p className="text-xs text-yellow-800 mt-1">
-                El pago se aprobará automáticamente. Para pagos reales, contactá al desarrollador para configurar el backend de Mercado Pago.
-              </p>
             </div>
 
             {/* Estado del pago */}
@@ -125,46 +137,26 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
               </div>
             )}
 
-            {/* Formulario de pago */}
+            {/* Botón de pago */}
             {processing ? (
               <div className="flex flex-col items-center justify-center py-10">
                 <Loader2 className="animate-spin text-purple-600 mb-4" size={48} />
-                <p className="text-gray-600">Procesando pago...</p>
+                <p className="text-gray-600">Redirigiendo a Mercado Pago...</p>
               </div>
             ) : paymentStatus !== 'approved' && (
-              <div className="space-y-4">
-                {/* Formulario simple de demo */}
-                <div className="bg-white border-2 border-purple-300 rounded-2xl p-6">
-                  <div className="mb-4">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={turnoData.clienteEmail}
-                      readOnly
-                      className="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-600"
-                    />
-                  </div>
+              <div>
+                <button
+                  onClick={createPreference}
+                  disabled={processing}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-400 text-white py-6 rounded-2xl font-black text-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  💳 Pagar ${SENA_FIJA.toLocaleString('es-AR')} con Mercado Pago
+                </button>
 
-                  <div className="mb-4">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Nombre del titular
-                    </label>
-                    <input
-                      type="text"
-                      value={turnoData.clienteNombre}
-                      readOnly
-                      className="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-600"
-                    />
-                  </div>
-
-                  <button
-                    onClick={() => onSubmit({ payer: { email: turnoData.clienteEmail } })}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-400 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all"
-                  >
-                    💳 Simular Pago de ${SENA_FIJA.toLocaleString('es-AR')}
-                  </button>
+                <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-4 mt-4">
+                  <p className="text-sm text-green-900">
+                    ✅ <strong>Pago seguro:</strong> Serás redirigido a Mercado Pago para completar el pago de forma segura.
+                  </p>
                 </div>
               </div>
             )}
