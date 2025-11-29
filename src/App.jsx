@@ -3,6 +3,7 @@
   import { db } from './firebase';
   import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
   import PaymentStep from './PaymentStep';
+  import Admin from './Admin';
 
   export default function NailSalonBooking() {
     const [selectedService, setSelectedService] = useState(null);
@@ -13,7 +14,7 @@
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [bookedSlots, setBookedSlots] = useState([]);
     const [loading, setLoading] = useState(false);
-    
+    const [showAdmin, setShowAdmin] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
     const [pendingTurnoData, setPendingTurnoData] = useState(null);
 
@@ -425,6 +426,11 @@ useEffect(() => {
       return !bookedSlots.includes(time);
     };
 
+// Mostrar panel de admin
+if (showAdmin) {
+  return <Admin />;
+}
+
     if (showPayment) {
       return (
         <PaymentStep 
@@ -512,19 +518,22 @@ useEffect(() => {
         <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-pink-400 text-white p-6 shadow-2xl relative overflow-hidden sticky top-0 z-50">
           <div className="absolute inset-0 bg-white opacity-5"></div>
           <div className="max-w-md mx-auto relative z-10">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="bg-white p-3 rounded-2xl shadow-xl">
-                <img 
-                  src="/logo-april.jpg" 
-                  alt="April Logo" 
-                  className="w-14 h-14 object-contain"
-                />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">NAILS BY APRIL</h1>
-                <p className="text-purple-100 font-medium text-lg">Reservá tu turno online</p>
-              </div>
-            </div>
+          <div className="flex items-center gap-4 mb-3">
+  <div 
+    className="bg-white p-3 rounded-2xl shadow-xl cursor-pointer"
+    onClick={() => setShowAdmin(true)}
+  >
+    <img 
+      src="/logo-april.jpg" 
+      alt="April Logo" 
+      className="w-14 h-14 object-contain"
+    />
+  </div>
+  <div>
+    <h1 className="text-3xl font-black tracking-tight">NAILS BY APRIL</h1>
+    <p className="text-purple-100 font-medium text-lg">Reservá tu turno online</p>
+  </div>
+</div>
             <div className="flex flex-col gap-2 mt-5 text-sm bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-xl">
               <div className="flex items-center gap-2">
                 <MapPin size={18} className="flex-shrink-0" />
