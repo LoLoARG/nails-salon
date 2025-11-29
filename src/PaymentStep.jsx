@@ -1,35 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { initMercadoPago, Payment } from '@mercadopago/sdk-react';
+import React, { useState } from 'react';
 import { CreditCard, ArrowLeft, Loader2 } from 'lucide-react';
-
-// Inicializar Mercado Pago
-const MP_PUBLIC_KEY = import.meta.env.VITE_MP_PUBLIC_KEY || 'TEST-41b7c135-92d1-43de-8ffb-ea13334266b0';
-initMercadoPago(MP_PUBLIC_KEY);
 
 export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [processing, setProcessing] = useState(false);
 
   const SENA_FIJA = 5000; // Seña de $5.000 para todos
-
-  const initialization = {
-    amount: SENA_FIJA,
-    payer: {
-      email: turnoData.clienteEmail || '',
-      entityType: 'individual'
-    }
-  };
-
-  const customization = {
-    visual: {
-      style: {
-        theme: 'default'
-      }
-    },
-    paymentMethods: {
-      maxInstallments: 1
-    }
-  };
 
   const onSubmit = async (formData) => {
     setProcessing(true);
@@ -156,12 +132,41 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
                 <p className="text-gray-600">Procesando pago...</p>
               </div>
             ) : paymentStatus !== 'approved' && (
-              <Payment
-                initialization={initialization}
-                customization={customization}
-                onSubmit={onSubmit}
-                onError={onError}
-              />
+              <div className="space-y-4">
+                {/* Formulario simple de demo */}
+                <div className="bg-white border-2 border-purple-300 rounded-2xl p-6">
+                  <div className="mb-4">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={turnoData.clienteEmail}
+                      readOnly
+                      className="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-600"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Nombre del titular
+                    </label>
+                    <input
+                      type="text"
+                      value={turnoData.clienteNombre}
+                      readOnly
+                      className="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-600"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => onSubmit({ payer: { email: turnoData.clienteEmail } })}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-400 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all"
+                  >
+                    💳 Simular Pago de ${SENA_FIJA.toLocaleString('es-AR')}
+                  </button>
+                </div>
+              </div>
             )}
 
             <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 mt-6">
