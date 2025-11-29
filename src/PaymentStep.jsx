@@ -13,10 +13,19 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
     setProcessing(true);
 
     try {
+      // Generar un email temporal si no existe
+      const emailCliente = turnoData.clienteEmail || `cliente${Date.now()}@turno.temp`;
+      
+      // Extraer código de área del teléfono (asumo formato: 3794123456 o 11123456)
+      const telefonoCompleto = turnoData.clienteTelefono?.replace(/\D/g, '') || '';
+      const areaCode = telefonoCompleto.substring(0, telefonoCompleto.length > 8 ? 4 : 2);
+      const number = telefonoCompleto.substring(telefonoCompleto.length > 8 ? 4 : 2);
+
       const preference = {
         items: [
           {
             title: `Seña - ${turnoData.servicio}`,
+            description: `Turno: ${turnoData.fecha} ${turnoData.hora}`,
             quantity: 1,
             unit_price: SENA_FIJA,
             currency_id: 'ARS'
@@ -24,15 +33,16 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
         ],
         payer: {
           name: turnoData.clienteNombre,
-          email: turnoData.clienteEmail,
+          email: emailCliente,
           phone: {
-            number: turnoData.clienteTelefono
+            area_code: areaCode,
+            number: number
           }
         },
         back_urls: {
-          success: window.location.origin + '/success',
-          failure: window.location.origin + '/failure',
-          pending: window.location.origin + '/pending'
+          success: `${window.location.origin}?status=success`,
+          failure: `${window.location.origin}?status=failure`,
+          pending: `${window.location.origin}?status=pending`
         },
         auto_return: 'approved',
         external_reference: JSON.stringify({
@@ -41,9 +51,11 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
           hora: turnoData.hora,
           clienteNombre: turnoData.clienteNombre,
           clienteTelefono: turnoData.clienteTelefono
-        }),
-        notification_url: 'https://tu-dominio.com/webhooks/mercadopago' // Cambiar por tu URL real
+        })
+        // notification_url se configura después en el panel de MP
       };
+
+      console.log('Enviando preferencia:', preference);
 
       const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
         method: 'POST',
@@ -55,6 +67,7 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
       });
 
       const data = await response.json();
+      console.log('Respuesta de MP:', data);
 
       if (data.id) {
         // Redirigir a Mercado Pago
