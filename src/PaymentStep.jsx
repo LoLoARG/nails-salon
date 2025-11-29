@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { initMercadoPago, Payment } from '@mercadopago/sdk-react';
 import { CreditCard, ArrowLeft, Loader2 } from 'lucide-react';
 
 // Inicializar Mercado Pago
-initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY);
+const MP_PUBLIC_KEY = import.meta.env.VITE_MP_PUBLIC_KEY || 'TEST-41b7c135-92d1-43de-8ffb-ea13334266b0';
+initMercadoPago(MP_PUBLIC_KEY);
 
 export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
   const [paymentStatus, setPaymentStatus] = useState(null);
@@ -14,7 +15,8 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
   const initialization = {
     amount: SENA_FIJA,
     payer: {
-      email: turnoData.clienteEmail || ''
+      email: turnoData.clienteEmail || '',
+      entityType: 'individual'
     }
   };
 
@@ -29,51 +31,43 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
     }
   };
 
-  const onSubmit = async ({ selectedPaymentMethod, formData }) => {
+  const onSubmit = async (formData) => {
     setProcessing(true);
-    
-    try {
-      // Crear preferencia de pago
-      const response = await fetch('https://api.mercadopago.com/v1/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_MP_ACCESS_TOKEN}`
-        },
-        body: JSON.stringify({
+
+    return new Promise((resolve, reject) => {
+      // NOTA: Esta es una simulación de pago
+      // Para pagos reales, necesitas configurar un backend que procese el pago con Mercado Pago
+
+      console.log('Datos del formulario de pago:', formData);
+
+      setTimeout(() => {
+        const mockPaymentResult = {
+          id: 'DEMO_PAYMENT_' + Date.now(),
+          status: 'approved',
           transaction_amount: SENA_FIJA,
           description: `Seña - ${turnoData.servicio}`,
-          payment_method_id: selectedPaymentMethod,
           payer: {
-            email: formData.payer.email
+            email: formData.payer?.email || turnoData.clienteEmail
           },
-          external_reference: JSON.stringify({
+          metadata: {
             servicio: turnoData.servicio,
             fecha: turnoData.fecha,
             hora: turnoData.hora,
             clienteNombre: turnoData.clienteNombre,
             clienteTelefono: turnoData.clienteTelefono
-          })
-        })
-      });
+          }
+        };
 
-      const result = await response.json();
-      
-      if (result.status === 'approved') {
         setPaymentStatus('approved');
+        setProcessing(false);
+
         // Llamar a la función de éxito
         setTimeout(() => {
-          onPaymentSuccess(result);
-        }, 2000);
-      } else {
-        setPaymentStatus('rejected');
-      }
-    } catch (error) {
-      console.error('Error en el pago:', error);
-      setPaymentStatus('error');
-    }
-    
-    setProcessing(false);
+          onPaymentSuccess(mockPaymentResult);
+          resolve();
+        }, 1500);
+      }, 2000);
+    });
   };
 
   const onError = async (error) => {
@@ -120,9 +114,17 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
             </div>
 
             {/* Monto */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-400 rounded-2xl p-5 mb-6 text-white text-center">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-400 rounded-2xl p-5 mb-4 text-white text-center">
               <p className="text-sm mb-1">Seña a pagar:</p>
               <p className="text-4xl font-black">${SENA_FIJA.toLocaleString('es-AR')}</p>
+            </div>
+
+            {/* Aviso de modo prueba */}
+            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-4 mb-6">
+              <p className="text-yellow-900 font-bold text-sm">⚠️ MODO DEMOSTRACIÓN</p>
+              <p className="text-xs text-yellow-800 mt-1">
+                El pago se aprobará automáticamente. Para pagos reales, contactá al desarrollador para configurar el backend de Mercado Pago.
+              </p>
             </div>
 
             {/* Estado del pago */}
