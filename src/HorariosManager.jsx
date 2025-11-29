@@ -19,24 +19,20 @@ export default function HorariosManager() {
     '14:00', '15:00', '16:00', '17:00', '18:00'
   ];
 
-  useEffect(() => {
-    loadBloqueados();
-  }, []);
-
   const loadBloqueados = async () => {
     setLoading(true);
     try {
       const bloqueadosRef = collection(db, 'horarios_bloqueados');
       const querySnapshot = await getDocs(bloqueadosRef);
-      
+
       const data = [];
       querySnapshot.forEach((doc) => {
         data.push({ id: doc.id, ...doc.data() });
       });
-      
+
       // Ordenar por fecha
       data.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-      
+
       setBloqueados(data);
     } catch (error) {
       console.error('Error al cargar bloqueados:', error);
@@ -44,6 +40,10 @@ export default function HorariosManager() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    loadBloqueados();
+  }, []);
 
   const handleBloquearDiaCompleto = async (e) => {
     e.preventDefault();
