@@ -3,7 +3,7 @@
   import { db } from './firebase';
   import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
   import PaymentStep from './PaymentStep';
-  import Admin from './Admin';
+  import Admin from './admin';
 
   export default function NailSalonBooking() {
     const [selectedService, setSelectedService] = useState(null);
