@@ -6,7 +6,7 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
   const [processing, setProcessing] = useState(false);
   const [preferenceId, setPreferenceId] = useState(null);
 
-  const SENA_FIJA = 5000; // Seña de $5.000 para todos
+  const SENA_FIJA = 100; // Seña de $5.000 para todos
   const ACCESS_TOKEN = import.meta.env.VITE_MP_ACCESS_TOKEN;
 
   const createPreference = async () => {
@@ -40,9 +40,9 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
           }
         },
         back_urls: {
-          success: `${window.location.origin}?status=success`,
-          failure: `${window.location.origin}?status=failure`,
-          pending: `${window.location.origin}?status=pending`
+          success: 'https://admirable-marshmallow-851aa4.netlify.app?status=success',
+          failure: 'https://admirable-marshmallow-851aa4.netlify.app?status=failure',
+          pending: 'https://admirable-marshmallow-851aa4.netlify.app?status=pending'
         },
         auto_return: 'approved',
         external_reference: JSON.stringify({
@@ -52,7 +52,8 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
           clienteNombre: turnoData.clienteNombre,
           clienteTelefono: turnoData.clienteTelefono
         })
-        // notification_url se configura después en el panel de MP
+        // notification_url se configura después en el panel de MPgit add src/PaymentStep.jsx
+
       };
 
       console.log('Enviando preferencia:', preference);
