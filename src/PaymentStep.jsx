@@ -1,84 +1,74 @@
 import React, { useState } from 'react';
-import { initMercadoPago, Payment } from '@mercadopago/sdk-react';
 import { CreditCard, ArrowLeft, Loader2 } from 'lucide-react';
-
-// Inicializar Mercado Pago
-initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY);
 
 export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [preferenceId, setPreferenceId] = useState(null);
 
   const SENA_FIJA = 5000; // Seña de $5.000 para todos
+  const ACCESS_TOKEN = import.meta.env.VITE_MP_ACCESS_TOKEN;
 
-  const initialization = {
-    amount: SENA_FIJA,
-    payer: {
-      email: turnoData.clienteEmail || ''
-    }
-  };
-
-  const customization = {
-    visual: {
-      style: {
-        theme: 'default'
-      }
-    },
-    paymentMethods: {
-      maxInstallments: 1
-    }
-  };
-
-  const onSubmit = async ({ selectedPaymentMethod, formData }) => {
+  const createPreference = async () => {
     setProcessing(true);
-    
+
     try {
-      // Crear preferencia de pago
-      const response = await fetch('https://api.mercadopago.com/v1/payments', {
+      const preference = {
+        items: [
+          {
+            title: `Seña - ${turnoData.servicio}`,
+            quantity: 1,
+            unit_price: SENA_FIJA,
+            currency_id: 'ARS'
+          }
+        ],
+        payer: {
+          name: turnoData.clienteNombre,
+          email: turnoData.clienteEmail,
+          phone: {
+            number: turnoData.clienteTelefono
+          }
+        },
+        back_urls: {
+          success: window.location.origin + '/success',
+          failure: window.location.origin + '/failure',
+          pending: window.location.origin + '/pending'
+        },
+        auto_return: 'approved',
+        external_reference: JSON.stringify({
+          servicio: turnoData.servicio,
+          fecha: turnoData.fecha,
+          hora: turnoData.hora,
+          clienteNombre: turnoData.clienteNombre,
+          clienteTelefono: turnoData.clienteTelefono
+        }),
+        notification_url: 'https://tu-dominio.com/webhooks/mercadopago' // Cambiar por tu URL real
+      };
+
+      const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_MP_ACCESS_TOKEN}`
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
         },
-        body: JSON.stringify({
-          transaction_amount: SENA_FIJA,
-          description: `Seña - ${turnoData.servicio}`,
-          payment_method_id: selectedPaymentMethod,
-          payer: {
-            email: formData.payer.email
-          },
-          external_reference: JSON.stringify({
-            servicio: turnoData.servicio,
-            fecha: turnoData.fecha,
-            hora: turnoData.hora,
-            clienteNombre: turnoData.clienteNombre,
-            clienteTelefono: turnoData.clienteTelefono
-          })
-        })
+        body: JSON.stringify(preference)
       });
 
-      const result = await response.json();
-      
-      if (result.status === 'approved') {
-        setPaymentStatus('approved');
-        // Llamar a la función de éxito
-        setTimeout(() => {
-          onPaymentSuccess(result);
-        }, 2000);
+      const data = await response.json();
+
+      if (data.id) {
+        // Redirigir a Mercado Pago
+        window.location.href = data.init_point;
       } else {
-        setPaymentStatus('rejected');
+        console.error('Error creando preferencia:', data);
+        setPaymentStatus('error');
+        setProcessing(false);
       }
     } catch (error) {
-      console.error('Error en el pago:', error);
+      console.error('Error:', error);
       setPaymentStatus('error');
+      setProcessing(false);
     }
-    
-    setProcessing(false);
-  };
-
-  const onError = async (error) => {
-    console.error('Error:', error);
-    setPaymentStatus('error');
   };
 
   return (
@@ -147,19 +137,28 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
               </div>
             )}
 
-            {/* Formulario de pago */}
+            {/* Botón de pago */}
             {processing ? (
               <div className="flex flex-col items-center justify-center py-10">
                 <Loader2 className="animate-spin text-purple-600 mb-4" size={48} />
-                <p className="text-gray-600">Procesando pago...</p>
+                <p className="text-gray-600">Redirigiendo a Mercado Pago...</p>
               </div>
             ) : paymentStatus !== 'approved' && (
-              <Payment
-                initialization={initialization}
-                customization={customization}
-                onSubmit={onSubmit}
-                onError={onError}
-              />
+              <div>
+                <button
+                  onClick={createPreference}
+                  disabled={processing}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-400 text-white py-6 rounded-2xl font-black text-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  💳 Pagar ${SENA_FIJA.toLocaleString('es-AR')} con Mercado Pago
+                </button>
+
+                <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-4 mt-4">
+                  <p className="text-sm text-green-900">
+                    ✅ <strong>Pago seguro:</strong> Serás redirigido a Mercado Pago para completar el pago de forma segura.
+                  </p>
+                </div>
+              </div>
             )}
 
             <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 mt-6">
