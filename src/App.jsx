@@ -4,6 +4,7 @@
   import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
   import PaymentStep from './PaymentStep';
   import Admin from './admin';
+  import Bio from './Bio';
 
   export default function NailSalonBooking() {
     const [selectedService, setSelectedService] = useState(null);
@@ -17,7 +18,7 @@
     const [showAdmin, setShowAdmin] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
     const [pendingTurnoData, setPendingTurnoData] = useState(null);
-
+    const [showBio, setShowBio] = useState(false);
 
 
     const dateRef = useRef(null);
@@ -426,7 +427,20 @@ useEffect(() => {
       return !bookedSlots.includes(time);
     };
 
-// Mostrar panel de admin
+
+// Detectar si la URL tiene ?bio
+useEffect(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('bio') !== null) {
+    setShowBio(true);
+  }
+}, []);
+
+// Mostrar página Bio
+if (showBio) {
+  return <Bio />;
+}
+    // Mostrar panel de admin
 if (showAdmin) {
   return <Admin />;
 }
