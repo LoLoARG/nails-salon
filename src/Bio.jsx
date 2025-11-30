@@ -11,7 +11,8 @@ export default function Bio() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-pink-100 flex flex-col items-center justify-center p-6">
       <div className="text-center mb-12">
-        <h1 className="text-6xl font-bold text-rose-300 mb-8">By April</h1>
+      <h1 className="text-6xl font-bold text-rose-300 mb-2">By April</h1>
+      <p className="text-sm text-gray-600 font-medium mb-6">𝐂𝐎𝐌𝐄𝐓𝐄 𝐄𝐋 𝐌𝐔𝐍𝐃𝐎 𝐍𝐎 𝐓𝐔𝐒 𝐔Ñ𝐀𝐒💅🏼</p>
         <a href="https://www.instagram.com/nails_by_aprill" target="_blank" rel="noopener noreferrer" className="inline-block hover:scale-110 transition-transform">
           <Instagram size={40} className="text-gray-700" />
         </a>
