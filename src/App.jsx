@@ -216,7 +216,7 @@ useEffect(() => {
 }, []);
 
 const sendWhatsAppNotification = (service, date, time, name, phone) => {
-  const aprilPhone = '5493624748712';
+  const aprilPhone = '5493625351595';
   
   const message = `🎉 *NUEVO TURNO CONFIRMADO* 🎉
 
