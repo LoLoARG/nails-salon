@@ -125,9 +125,9 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
             </div>
 
             {/* Monto */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-400 rounded-2xl p-5 mb-6 text-white text-center">
-              <p className="text-sm mb-1">Seña a pagar:</p>
-              <p className="text-4xl font-black">${SENA_FIJA.toLocaleString('es-AR')}</p>
+            <div className="rounded-2xl p-5 mb-6 text-center">
+              <p className="text-sm mb-1 text-gray-600">Seña a pagar:</p>
+                <p className="text-4xl font-black text-gray-800">${SENA_FIJA.toLocaleString('es-AR')}</p>
             </div>
 
             {/* Estado del pago */}
@@ -168,11 +168,11 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
                   💳 Pagar ${SENA_FIJA.toLocaleString('es-AR')} con Mercado Pago
                 </button>
 
-                <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-4 mt-4">
-                  <p className="text-sm text-green-900">
-                    ✅ <strong>Pago seguro:</strong> Serás redirigido a Mercado Pago para completar el pago de forma segura.
-                  </p>
-                </div>
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-4 mt-4">
+  <p className="text-sm text-blue-900">
+    ✅ <strong>Pago seguro:</strong> Serás redirigido a Mercado Pago para completar el pago de forma segura.
+  </p>
+</div>
               </div>
             )}
 
