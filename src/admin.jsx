@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Trash2, LogOut, Loader2, RefreshCw, Filter } from 'lucide-react';
+import { Calendar, Trash2, LogOut, Loader2, RefreshCw, Filter, ArrowLeft } from 'lucide-react';
 import { db } from './firebase';
 import { collection, query, orderBy, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import HorariosManager from './HorariosManager';
@@ -144,6 +145,15 @@ export default function Admin() {
                 <p className="text-purple-100 text-sm">Nails by April</p>
               </div>
             </div>
+            <div className="flex gap-2">
+            <button
+              onClick={() => window.location.href = '/'}
+              className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-xl flex items-center gap-2 transition-all"
+            >
+              <ArrowLeft size={18} />
+              <span className="hidden sm:inline">Volver a turnos</span>
+            </button>
+            
             <button
               onClick={handleLogout}
               className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-xl flex items-center gap-2 transition-all"
@@ -151,7 +161,8 @@ export default function Admin() {
               <LogOut size={18} />
               <span className="hidden sm:inline">Salir</span>
             </button>
-          </div>
+            </div>
+            </div>
 
           {/* Filtros */}
           <div className="bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-xl">
