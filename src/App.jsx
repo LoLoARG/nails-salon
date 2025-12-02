@@ -576,9 +576,7 @@ if (showAdmin) {
         <div className="max-w-md mx-auto p-5 pb-8">
           {/* Selección de Servicio */}
           <div className="mb-8">
-            <h2 className="text-2xl font-black mb-5 text-gray-800 flex items-center gap-2">
-              <span className="bg-gradient-to-r from-purple-600 to-pink-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg">1</span>
-              Elegí tu servicio
+          <h2 className="text-2xl font-black mb-5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 flex items-center gap-2">    Elegí tu servicio
             </h2>
             
             {services.map((category) => (
@@ -634,8 +632,7 @@ if (showAdmin) {
           {selectedService && (
             <div className="space-y-8">
               <div ref={dateRef} className="scroll-mt-32">
-                <h2 className="text-2xl font-black mb-5 text-gray-800 flex items-center gap-2">
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg animate-pulse">2</span>
+              <h2 className="text-2xl font-black mb-5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 flex items-center gap-2">             <span className="bg-gradient-to-r from-purple-600 to-pink-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg animate-pulse">2</span>
                   Elegí fecha y hora
                 </h2>
                 
@@ -694,8 +691,7 @@ if (showAdmin) {
               {/* Datos del Cliente */}
               {selectedDate && selectedTime && (
                 <div ref={customerRef} className="scroll-mt-32 animate-fadeIn">
-                  <h2 className="text-2xl font-black mb-5 text-gray-800 flex items-center gap-2">
-                    <span className="bg-gradient-to-r from-purple-600 to-pink-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg animate-pulse">3</span>
+               <h2 className="text-2xl font-black mb-5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 flex items-center gap-2">     <span className="bg-gradient-to-r from-purple-600 to-pink-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg animate-pulse">3</span>
                     Tus datos
                   </h2>
                   
