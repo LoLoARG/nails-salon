@@ -526,7 +526,7 @@ if (showAdmin) {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100">
+      <div className="min-h-screen bg-black">
         {/* Header con logo APRIL */}
         <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-pink-400 text-white p-6 shadow-2xl relative overflow-hidden sticky top-0 z-50">
           <div className="absolute inset-0 bg-white opacity-5"></div>
