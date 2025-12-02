@@ -19,7 +19,7 @@
     const [showPayment, setShowPayment] = useState(false);
     const [pendingTurnoData, setPendingTurnoData] = useState(null);
     const [showBio, setShowBio] = useState(false);
-
+    const [scrolled, setScrolled] = useState(false);
 
     const dateRef = useRef(null);
     const timeRef = useRef(null);
@@ -435,6 +435,16 @@ useEffect(() => {
   }
 }, []);
 
+useEffect(() => {
+  const handleScroll = () => {
+    setScrolled(window.scrollY > 50);
+  };
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
+
+
+
 // Mostrar página Bio
 if (showBio) {
   return <Bio />;
@@ -528,22 +538,21 @@ if (showAdmin) {
     return (
       <div className="min-h-screen bg-black">
         {/* Header con logo APRIL */}
-        <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-pink-400 text-white p-6 shadow-2xl relative overflow-hidden sticky top-0 z-50">
+        <div className={`bg-gradient-to-br from-purple-600 via-purple-500 to-pink-400 text-white shadow-2xl relative overflow-hidden sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'p-3' : 'p-6'}`}>
           <div className="absolute inset-0 bg-white opacity-5"></div>
           <div className="max-w-md mx-auto relative z-10">
           <div className="flex items-center gap-4 mb-3">
-  <div 
-    className="bg-white p-3 rounded-2xl shadow-xl cursor-pointer"
-    onClick={() => setShowAdmin(true)}
-  >
-    <img 
-      src="/logo-april.jpg" 
-      alt="April Logo" 
-      className="w-14 h-14 object-contain"
-    />
-  </div>
+          <div className={`bg-white rounded-2xl shadow-xl cursor-pointer transition-all duration-300 ${scrolled ? 'p-2' : 'p-3'}`}
+  onClick={() => setShowAdmin(true)}
+>
+  <img 
+    src="/logo-april.jpg" 
+    alt="April Logo" 
+    className={`object-contain transition-all duration-300 ${scrolled ? 'w-10 h-10' : 'w-14 h-14'}`}
+  />
+</div>
   <div>
-    <h1 className="text-3xl font-black tracking-tight">NAILS BY APRIL</h1>
+  <h1 className={`font-black tracking-tight transition-all duration-300 ${scrolled ? 'text-2xl' : 'text-3xl'}`}>NAILS BY APRIL</h1>
     <p className="text-purple-100 font-medium text-lg">Reservá tu turno online</p>
   </div>
 </div>
