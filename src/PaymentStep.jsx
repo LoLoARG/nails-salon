@@ -40,10 +40,11 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
           }
         },
         back_urls: {
-          success: 'https://admirable-marshmallow-851aa4.netlify.app?status=success',
-          failure: 'https://admirable-marshmallow-851aa4.netlify.app?status=failure',
-          pending: 'https://admirable-marshmallow-851aa4.netlify.app?status=pending'
+          success: 'https://turnos-april.netlify.app?status=success',
+          failure: 'https://turnos-april.netlify.app?status=failure',
+          pending: 'https://turnos-april.netlify.app?status=pending'
         },
+      
         auto_return: 'approved',
         external_reference: JSON.stringify({
           servicio: turnoData.servicio,
