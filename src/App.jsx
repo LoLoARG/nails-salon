@@ -554,11 +554,11 @@ if (showAdmin) {
               </div>
               <div className="flex items-center gap-2">
                 <Phone size={18} className="flex-shrink-0" />
-                <span className="font-medium">3624-748712</span>
+                <span className="font-medium">3625-351595</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={18} className="flex-shrink-0" />
-                <span className="font-medium">Lun a Sáb • 9:00 - 18:00 hs</span>
+                <span className="font-medium">Lun a Sáb • 7:00 - 13:00 hs</span>
               </div>
             </div>
           </div>
