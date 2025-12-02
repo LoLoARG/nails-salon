@@ -6,7 +6,7 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
   const [processing, setProcessing] = useState(false);
   const [preferenceId, setPreferenceId] = useState(null);
 
-  const SENA_FIJA = 5.000; // Seña de $5.000 para todos
+  const SENA_FIJA = 5000; // Seña de $5.000 para todos
   const ACCESS_TOKEN = import.meta.env.VITE_MP_ACCESS_TOKEN;
 
   const createPreference = async () => {
