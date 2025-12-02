@@ -160,13 +160,13 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
               </div>
             ) : paymentStatus !== 'approved' && (
               <div>
-                <button
-                  onClick={createPreference}
-                  disabled={processing}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-400 text-white py-6 rounded-2xl font-black text-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  💳 Pagar ${SENA_FIJA.toLocaleString('es-AR')} con Mercado Pago
-                </button>
+  <button
+    onClick={createPreference}
+    disabled={processing}
+    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-6 rounded-2xl font-black text-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    💳 Pagar ${SENA_FIJA.toLocaleString('es-AR')} con Mercado Pago
+  </button>
 
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-4 mt-4">
   <p className="text-sm text-blue-900">
