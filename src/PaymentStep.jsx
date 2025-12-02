@@ -40,9 +40,9 @@ export default function PaymentStep({ turnoData, onBack, onPaymentSuccess }) {
           }
         },
         back_urls: {
-          success: 'https://turnos-april.netlify.app?status=success',
-          failure: 'https://turnos-april.netlify.app?status=failure',
-          pending: 'https://turnos-april.netlify.app?status=pending'
+          success: 'https://reservas-april.netlify.app?status=success',
+          failure: 'https://reservas-april.netlify.app?status=failure',
+          pending: 'https://reservas-april.netlify.app?status=pending'
         },
       
         auto_return: 'approved',
