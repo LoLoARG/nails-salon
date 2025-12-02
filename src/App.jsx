@@ -32,35 +32,35 @@
         items: [
           {
             name: 'Semipermanentes',
-            price: '$14.000',
+            price: '$16.000',  // ← Cambiar de $14.000 a $16.000
             duration: '60 min',
             description: 'Esmaltado gel UV de larga duración',
             image: '/semipermanentes.jpg'
           },
           {
             name: 'Kapping Gel',
-            price: '$16.000',
+            price: '$18.000',  // ← Cambiar de $16.000 a $18.000
             duration: '90 min',
             description: 'Refuerzo de uña natural con gel',
             image: '/kapping.jpg'
           },
           {
             name: 'Soft Gel',
-            price: '$16.000',
+            price: '$18.000',  // ← Cambiar de $16.000 a $18.000
             duration: '90 min',
             description: 'Sistema de uñas suaves y flexibles',
             image: '/softgel.jpg'
           },
           {
             name: 'Arreglo por Uña',
-            price: '$300',
+            price: '$300',  // ← Ya está en $300, no cambiar
             duration: '15 min',
             description: 'Reparación individual de uña',
             image: '/arreglo.jpg'
           },
           {
             name: 'Retirado de Otro Salón',
-            price: '$3.000 - $4.000',
+            price: '$4.000 - $5.000',  // ← Cambiar de $3.000 - $4.000 a $4.000 - $5.000
             duration: '30 min',
             description: 'Retiro profesional de trabajos externos',
             image: '/retirado.jpg'
