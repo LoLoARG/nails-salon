@@ -235,7 +235,7 @@ const sendWhatsAppNotification = (service, date, time, name, phone) => {
 👤 *Cliente:* ${name}
 📱 *Teléfono:* ${phone}
 
-💵 *SEÑA PAGADA: $100* ✅
+💵 *SEÑA PAGADA: $5.000* ✅
 
 ---
 _Reserva realizada desde la web_`;
@@ -363,7 +363,7 @@ useEffect(() => {
             hora: turnoData.hora,
             clienteNombre: turnoData.clienteNombre,
             clienteTelefono: turnoData.clienteTelefono,
-            senaPagada: 100,
+            senaPagada: 5000,
             estadoPago: 'aprobado',
             paymentId: paymentId,
             timestamp: Timestamp.now()
