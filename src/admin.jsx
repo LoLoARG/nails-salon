@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Trash2, LogOut, Loader2, RefreshCw, Filter, ArrowLeft } from 'lucide-react'; // iconsimport { db } from './firebase';
+import { Calendar, Trash2, LogOut, Loader2, RefreshCw, Filter, ArrowLeft } from 'lucide-react';
+import { db } from './firebase';
 import { collection, query, orderBy, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import HorariosManager from './HorariosManager';
 
