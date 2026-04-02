@@ -1,764 +1,490 @@
-  import React, { useState, useEffect, useRef } from 'react';
-  import { Calendar, Clock, ChevronRight, Phone, MapPin, Sparkles, MessageCircle, Loader2 } from 'lucide-react';
-  import { db } from './firebase';
-  import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
-  import PaymentStep from './PaymentStep';
-  import Admin from './admin';
-  import Bio from './Bio';
+import { useState, useEffect, useRef } from 'react';
+import { collection, onSnapshot, addDoc } from 'firebase/firestore';
+import { db } from './firebase';
+import Admin from './admin';
+import emailjs from '@emailjs/browser';
 
-  export default function NailSalonBooking() {
-    const [selectedService, setSelectedService] = useState(null);
-    const [selectedDate, setSelectedDate] = useState('');
-    const [selectedTime, setSelectedTime] = useState('');
-    const [customerName, setCustomerName] = useState('');
-    const [customerPhone, setCustomerPhone] = useState('');
-    const [showConfirmation, setShowConfirmation] = useState(false);
-    const [bookedSlots, setBookedSlots] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [showAdmin, setShowAdmin] = useState(false);
-    const [showPayment, setShowPayment] = useState(false);
-    const [pendingTurnoData, setPendingTurnoData] = useState(null);
-    const [showBio, setShowBio] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
+const EMAILJS_SERVICE_ID = 'service_thyqgmt';
+const EMAILJS_TEMPLATE_ID = 'template_8oa2ic8';
+const EMAILJS_PUBLIC_KEY = 'aVxKa83w3EQOULaoR';
 
-    const dateRef = useRef(null);
-    const timeRef = useRef(null);
-    const customerRef = useRef(null);
+const DEFAULT_SERVICES = [
+  { name: 'Manicura clásica', duration: 30, price: 5000, description: 'Limado, cutícula y esmaltado clásico' },
+  { name: 'Manicura gel', duration: 45, price: 7000, description: 'Esmaltado semipermanente de larga duración' },
+  { name: 'Uñas acrílicas', duration: 90, price: 12000, description: 'Construcción completa en acrílico' },
+  { name: 'Pedicura clásica', duration: 45, price: 6000, description: 'Limado, cutícula y esmaltado en pies' },
+];
 
-    const services = [
-      {
-        id: 1,
-        category: 'LISTA DE PRECIOS',
-        items: [
-          {
-            name: 'Semipermanentes',
-            price: '$16.000',  // ← Cambiar de $14.000 a $16.000
-            duration: '60 min',
-            description: 'Esmaltado gel UV de larga duración',
-            image: '/semipermanentes.jpg'
-          },
-          {
-            name: 'Kapping Gel',
-            price: '$18.000',  // ← Cambiar de $16.000 a $18.000
-            duration: '90 min',
-            description: 'Refuerzo de uña natural con gel',
-            image: '/kapping.jpg'
-          },
-          {
-            name: 'Soft Gel',
-            price: '$18.000',  // ← Cambiar de $16.000 a $18.000
-            duration: '90 min',
-            description: 'Sistema de uñas suaves y flexibles',
-            image: '/softgel.jpg'
-          },
-          {
-            name: 'Arreglo por Uña',
-            price: '$300',  // ← Ya está en $300, no cambiar
-            duration: '15 min',
-            description: 'Reparación individual de uña',
-            image: '/arreglo.jpg'
-          },
-          {
-            name: 'Retirado de Otro Salón',
-            price: '$4.000 - $5.000',  // ← Cambiar de $3.000 - $4.000 a $4.000 - $5.000
-            duration: '30 min',
-            description: 'Retiro profesional de trabajos externos',
-            image: '/retirado.jpg'
-          }
-        ]
-      },
-      {
-        id: 2,
-        category: 'DECORADO',
-        items: [
-          { name: 'Diseño por Uña', price: '$200', duration: '10 min', description: 'Arte personalizado en cada uña' },
-          { name: 'Efecto Espejo/Aurora', price: '$200', duration: '10 min', description: 'Acabado holográfico y brillante' },
-          { name: 'Relieve/Encapsulado', price: '$200', duration: '15 min', description: 'Diseños en 3D y encapsulados' },
-          { name: 'Glitter/Ojo de Gato', price: '$200', duration: '10 min', description: 'Efectos magnéticos y brillos' },
-          { name: 'Strass (hasta 5 x uña)', price: '$200', duration: '10 min', description: 'Piedras y cristales decorativos' }
-        ]
-      }
-    ];
+const SERVICE_IMAGES = {};
+const SERVICE_IMAGE_POSITION = {};
 
-
-    const getHorariosPorDia = (fecha) => {
-      const horariosDiciembre = {
-        '2025-12-01': ['07:00', '09:00', '11:00', '13:00'],
-        '2025-12-02': ['12:00', '14:00', '16:00', '18:00'],
-        '2025-12-03': ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-        '2025-12-04': ['07:00', '09:00', '11:00', '13:00'],
-        '2025-12-05': ['08:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-        '2025-12-06': ['10:00', '12:00', '12:01', '14:00', '14:01', '16:00', '16:01', '18:00', '18:01'],
-        '2025-12-07': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
-        '2025-12-08': ['07:00', '09:00', '11:00', '13:00'],
-        '2025-12-09': ['07:00', '09:00', '12:00', '14:00', '16:00', '18:00'],
-        '2025-12-10': ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-        '2025-12-11': ['07:00', '09:00', '11:00', '12:00', '14:00', '16:00', '18:00'],
-        '2025-12-12': ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-        '2025-12-13': ['10:00', '12:00', '12:01', '14:00', '14:01', '16:00', '18:00'],
-        '2025-12-14': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
-        '2025-12-15': ['07:00', '09:00', '11:00', '13:00'],
-        '2025-12-16': ['07:00', '09:00', '11:00', '12:00', '14:00', '16:00', '18:00'],
-        '2025-12-17': ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-        '2025-12-18': ['07:00', '09:00', '11:00', '13:00'],
-        '2025-12-19': ['08:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-        '2025-12-20': ['10:00', '12:00', '16:00', '18:00', '18:01'],
-        '2025-12-21': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
-        '2025-12-22': ['07:00', '09:00', '11:00', '13:00'],
-        '2025-12-23': ['07:00', '11:00', '12:00', '14:00', '18:00'],
-        '2025-12-24': ['08:00', '12:00'],
-        '2025-12-26': ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-        '2025-12-29': ['07:00', '09:00', '11:00', '13:00'],
-        '2025-12-30': ['07:00', '09:00', '12:00', '14:00', '16:00', '18:00'],
-        '2025-12-31': ['08:00', '10:00', '12:00']
-      };
-    
-      if (horariosDiciembre[fecha]) {
-        return horariosDiciembre[fecha];
-      }
-    
-      return ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00'];
-    };
-    
-    // Cargar turnos y horarios bloqueados cuando cambia la fecha
-    useEffect(() => {
-      const loadBookedSlots = async () => {
-        try {
-          // Obtener horarios del día
-          const horariosDelDia = getHorariosPorDia(selectedDate);
-
-          // Cargar turnos confirmados
-          const turnosRef = collection(db, 'turnos');
-          const qTurnos = query(turnosRef, where('fecha', '==', selectedDate));
-          const turnosSnapshot = await getDocs(qTurnos);
-
-          const slots = [];
-          turnosSnapshot.forEach((doc) => {
-            slots.push(doc.data().hora);
-          });
-
-          // Cargar horarios bloqueados
-          const bloqueadosRef = collection(db, 'horarios_bloqueados');
-
-          // Bloqueos de día completo
-          const qDiaCompleto = query(
-            bloqueadosRef,
-            where('tipo', '==', 'dia_completo'),
-            where('fecha', '==', selectedDate)
-          );
-          const diaCompletoSnapshot = await getDocs(qDiaCompleto);
-
-          // Si el día está bloqueado completamente, bloquear todos los horarios
-          if (!diaCompletoSnapshot.empty) {
-            setBookedSlots(horariosDelDia);
-            return;
-          }
-
-          // Bloqueos de horarios específicos
-          const qHorarios = query(
-            bloqueadosRef,
-            where('tipo', '==', 'horario_especifico'),
-            where('fecha', '==', selectedDate)
-          );
-          const horariosSnapshot = await getDocs(qHorarios);
-
-          horariosSnapshot.forEach((doc) => {
-            slots.push(doc.data().hora);
-          });
-
-          setBookedSlots(slots);
-
-        } catch (error) {
-          console.error('Error al cargar turnos:', error);
-        }
-      };
-
-      if (selectedDate) {
-        loadBookedSlots();
-      }
-    }, [selectedDate]);
-
-    useEffect(() => {
-      if (selectedService && dateRef.current) {
-        setTimeout(() => {
-          dateRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
-      }
-    }, [selectedService]);
-
-    useEffect(() => {
-      if (selectedDate && timeRef.current) {
-        setTimeout(() => {
-          timeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
-      }
-    }, [selectedDate]);
-
-    useEffect(() => {
-      if (selectedTime && customerRef.current) {
-        setTimeout(() => {
-          customerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
-      }
-    }, [selectedTime]);
-
-// Detectar retorno de Mercado Pago
-useEffect(() => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const status = urlParams.get('status');
-  
-  if (status === 'success' && pendingTurnoData) {
-    // El pago fue exitoso, guardar turno y enviar WhatsApp
-    handlePaymentSuccess({ id: urlParams.get('payment_id') || 'MP-' + Date.now() });
-  }
-}, []);
-
-const sendWhatsAppNotification = (service, date, time, name, phone) => {
-  const aprilPhone = '5493625351595';
-  
-  const message = `🎉 *NUEVO TURNO CONFIRMADO* 🎉
-
-💅 *Servicio:* ${service.name}
-💰 *Precio:* ${service.price}
-⏱️ *Duración:* ${service.duration}
-
-📅 *Fecha:* ${new Date(date + 'T00:00:00').toLocaleDateString('es-AR', { 
-  weekday: 'long', 
-  year: 'numeric', 
-  month: 'long', 
-  day: 'numeric' 
-})}
-🕐 *Hora:* ${time} hs
-
-👤 *Cliente:* ${name}
-📱 *Teléfono:* ${phone}
-
-💵 *SEÑA PAGADA: $5.000* ✅
-
----
-_Reserva realizada desde la web_`;
-
-  const whatsappUrl = `https://wa.me/${aprilPhone}?text=${encodeURIComponent(message)}`;
-  
-  // Usar setTimeout para evitar bloqueo de pop-ups
-  setTimeout(() => {
-    window.location.href = whatsappUrl;
-  }, 500);
-};
-    const handleBooking = () => {
-      if (selectedService && selectedDate && selectedTime && customerName && customerPhone) {
-        const service = getSelectedService();
-        
-        // Guardar datos del turno pendiente
-        const turnoData = {
-          servicio: service.name,
-          precio: service.price,
-          duracion: service.duration,
-          fecha: selectedDate,
-          hora: selectedTime,
-          clienteNombre: customerName,
-          clienteTelefono: customerPhone,
-          clienteEmail: `${customerPhone}@cliente.com`
-        };
-        
-        // Guardar en localStorage para no perderlo al volver de MP
-        localStorage.setItem('pendingTurno', JSON.stringify(turnoData));
-        
-        setPendingTurnoData(turnoData);
-        setShowPayment(true);
-      }
-    };
-
-    
-    const handlePaymentSuccess = async (paymentResult) => {
-      setLoading(true);
-      
-      try {
-        // Recuperar datos del localStorage si no están en el estado
-        const turnoData = pendingTurnoData || JSON.parse(localStorage.getItem('pendingTurno'));
-        
-        if (!turnoData) {
-          throw new Error('No se encontraron datos del turno');
-        }
-        
-        const service = getSelectedService() || {
-          name: turnoData.servicio,
-          price: turnoData.precio,
-          duration: turnoData.duracion
-        };
-        
-        // Guardar el turno en Firebase
-        await addDoc(collection(db, 'turnos'), {
-          servicio: turnoData.servicio,
-          precio: turnoData.precio,
-          duracion: turnoData.duracion,
-          fecha: turnoData.fecha,
-          hora: turnoData.hora,
-          clienteNombre: turnoData.clienteNombre,
-          clienteTelefono: turnoData.clienteTelefono,
-          senaPagada: 100, // Cambiar a 5000 después de las pruebas
-          estadoPago: 'aprobado',
-          paymentId: paymentResult.id,
-          timestamp: Timestamp.now()
-        });
-        
-        // Enviar WhatsApp a April
-        sendWhatsAppNotification(
-          service, 
-          turnoData.fecha, 
-          turnoData.hora, 
-          turnoData.clienteNombre, 
-          turnoData.clienteTelefono
-        );
-        
-        // Limpiar localStorage
-        localStorage.removeItem('pendingTurno');
-        
-        // Mostrar confirmación
-        setShowPayment(false);
-        setShowConfirmation(true);
-        setLoading(false);
-        
-        // Limpiar URL
-        window.history.replaceState({}, '', window.location.pathname);
-        
-      } catch (error) {
-        console.error('Error al guardar el turno:', error);
-        alert('Error al confirmar el turno. Contactá al local.');
-        setLoading(false);
-      }
-    };
-
-// Detectar retorno de Mercado Pago
-useEffect(() => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const status = urlParams.get('status');
-  
-  if (status === 'success' || status === 'approved') {
-    const turnoGuardado = localStorage.getItem('pendingTurno');
-    
-    if (turnoGuardado) {
-      const turnoData = JSON.parse(turnoGuardado);
-      const paymentId = urlParams.get('payment_id') || urlParams.get('collection_id') || 'MP-' + Date.now();
-      
-      // Guardar turno y enviar WhatsApp
-      (async () => {
-        setLoading(true);
-        
-        try {
-          const service = {
-            name: turnoData.servicio,
-            price: turnoData.precio,
-            duration: turnoData.duracion
-          };
-          
-          // Guardar en Firebase
-          await addDoc(collection(db, 'turnos'), {
-            servicio: turnoData.servicio,
-            precio: turnoData.precio,
-            duracion: turnoData.duracion,
-            fecha: turnoData.fecha,
-            hora: turnoData.hora,
-            clienteNombre: turnoData.clienteNombre,
-            clienteTelefono: turnoData.clienteTelefono,
-            senaPagada: 5000,
-            estadoPago: 'aprobado',
-            paymentId: paymentId,
-            timestamp: Timestamp.now()
-          });
-          
-          // Enviar WhatsApp
-          sendWhatsAppNotification(
-            service, 
-            turnoData.fecha, 
-            turnoData.hora, 
-            turnoData.clienteNombre, 
-            turnoData.clienteTelefono
-          );
-          
-          // Limpiar y mostrar confirmación
-          localStorage.removeItem('pendingTurno');
-          setSelectedService(turnoData.servicio);
-          setSelectedDate(turnoData.fecha);
-          setSelectedTime(turnoData.hora);
-          setCustomerName(turnoData.clienteNombre);
-          setCustomerPhone(turnoData.clienteTelefono);
-          setShowConfirmation(true);
-          setLoading(false);
-          
-          // Limpiar URL
-          window.history.replaceState({}, '', window.location.pathname);
-          
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Error al confirmar el turno');
-          setLoading(false);
-        }
-      })();
+function generateSlots() {
+  const ranges = [
+    { start: 9, startMin: 0, end: 13, endMin: 0 },
+    { start: 15, startMin: 0, end: 20, endMin: 0 },
+  ];
+  const slots = [];
+  for (const range of ranges) {
+    let h = range.start;
+    let m = range.startMin;
+    while (h < range.end || (h === range.end && m <= range.endMin)) {
+      slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+      m += 30;
+      if (m >= 60) { m = 0; h++; }
     }
   }
-}, []);
-
-
-    const resetForm = () => {
-      setSelectedService(null);
-      setSelectedDate('');
-      setSelectedTime('');
-      setCustomerName('');
-      setCustomerPhone('');
-      setShowConfirmation(false);
-      setBookedSlots([]);
-    };
-
-    const today = new Date().toISOString().split('T')[0];
-
-    const getSelectedService = () => {
-      for (let category of services) {
-        const found = category.items.find(item => item.name === selectedService);
-        if (found) return found;
-      }
-      return null;
-    };
-
-    const isTimeSlotAvailable = (time) => {
-      return !bookedSlots.includes(time);
-    };
-
-
-// Detectar si la URL tiene ?bio
-useEffect(() => {
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('bio') !== null) {
-    setShowBio(true);
-  }
-}, []);
-
-useEffect(() => {
-  const handleScroll = () => {
-    setScrolled(window.scrollY > 50);
-  };
-  window.addEventListener('scroll', handleScroll);
-  return () => window.removeEventListener('scroll', handleScroll);
-}, []);
-
-
-
-// Mostrar página Bio
-if (showBio) {
-  return <Bio />;
-}
-    // Mostrar panel de admin
-if (showAdmin) {
-  return <Admin />;
+  return slots;
 }
 
-    if (showPayment) {
-      return (
-        <PaymentStep 
-          turnoData={pendingTurnoData}
-          onBack={() => setShowPayment(false)}
-          onPaymentSuccess={handlePaymentSuccess}
-        />
-      );
+const ALL_SLOTS = generateSlots();
+
+function formatDateLong(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-AR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function slotsNeeded(durationMin) {
+  return Math.ceil(durationMin / 30);
+}
+
+export default function App() {
+  const [services, setServices] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [step, setStep] = useState(1);
+  const [selectedServiceId, setSelectedServiceId] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(() =>
+    window.location.search.includes('admin') ||
+    window.location.pathname.includes('admin') ||
+    localStorage.getItem('admin_auth') === 'true'
+  );
+  const [dateError, setDateError] = useState('');
+
+  const dateRef = useRef(null);
+  const timeRef = useRef(null);
+  const customerRef = useRef(null);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'services'), async snapshot => {
+      if (snapshot.empty) {
+        for (const svc of DEFAULT_SERVICES) {
+          await addDoc(collection(db, 'services'), svc);
+        }
+      } else {
+        setServices(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      }
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'appointments'), snapshot => {
+      setAppointments(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (step >= 2 && dateRef.current) {
+      setTimeout(() => dateRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
     }
-    
-    // Resto del código (confirmación, etc.)
-    if (showConfirmation) {
-      const service = getSelectedService();
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 p-4 animate-fadeIn">
-          <div className="max-w-md mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden mt-8 border-4 border-purple-200">
-            <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-pink-400 p-8 text-white text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-white opacity-10"></div>
-              <div className="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg relative z-10 animate-bounce">
-                <Sparkles className="text-purple-600" size={48} />
-              </div>
-              <h2 className="text-3xl font-bold mb-2 relative z-10">¡Turno Confirmado!</h2>
-              <p className="text-purple-100 text-lg relative z-10">Tu reserva ha sido registrada con éxito</p>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-5 border-2 border-purple-200 shadow-md">
-                <p className="text-sm text-gray-600 mb-1 font-semibold">💅 Servicio</p>
-                <p className="font-bold text-xl text-gray-800">{service.name}</p>
-                <p className="text-purple-600 font-semibold text-lg">{service.price} • {service.duration}</p>
-                <p className="text-sm text-gray-600 mt-2">{service.description}</p>
-              </div>
-              
-              <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-5 border-2 border-pink-200 shadow-md">
-                <p className="text-sm text-gray-600 mb-1 font-semibold">📅 Fecha y Hora</p>
-                <p className="font-bold text-lg text-gray-800">
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('es-AR', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </p>
-                <p className="text-purple-600 font-bold text-xl">{selectedTime} hs</p>
-              </div>
-              
-              <div className="bg-gray-50 rounded-2xl p-5 border-2 border-gray-200 shadow-md">
-                <p className="text-sm text-gray-600 mb-1 font-semibold">👤 Cliente</p>
-                <p className="font-bold text-lg text-gray-800">{customerName}</p>
-                <p className="text-gray-600 font-medium">{customerPhone}</p>
-              </div>
+  }, [selectedServiceId]);
 
-              <div className="bg-green-50 border-3 border-green-300 rounded-2xl p-5 mt-6 shadow-md">
-                <div className="flex items-start gap-3">
-                  <MessageCircle className="text-green-600 flex-shrink-0 mt-1" size={24} />
-                  <p className="text-sm text-green-900 leading-relaxed">
-                    <strong>✓ Notificación enviada:</strong> Se abrió WhatsApp para notificar a April sobre tu turno. 
-                    Si no se abrió automáticamente, contactala al <strong>3624-748712</strong>.
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border-3 border-blue-300 rounded-2xl p-5 mt-4 shadow-md">
-                <p className="text-sm text-blue-900 leading-relaxed">
-                  <strong>⏰ Importante:</strong> Te esperamos 5 minutos antes de tu turno. 
-                  Si necesitás cancelar o reprogramar, por favor avisanos con 24hs de anticipación.
-                </p>
-              </div>
-              
-              <button
-                onClick={resetForm}
-                className="w-full bg-gradient-to-r from-purple-600 via-purple-500 to-pink-400 text-white py-5 rounded-2xl font-bold text-xl hover:shadow-2xl hover:scale-105 transition-all mt-6 shadow-lg"
-              >
-                ✨ Volver al Menu
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+  useEffect(() => {
+    if (selectedDate && timeRef.current) {
+      setTimeout(() => timeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
     }
+  }, [selectedDate]);
 
+  useEffect(() => {
+    if (selectedTime && customerRef.current) {
+      setTimeout(() => customerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    }
+  }, [selectedTime]);
+
+  const today = new Date().toISOString().split('T')[0];
+  const selectedService = services.find(s => s.id === selectedServiceId) || null;
+
+  function getOccupiedSlots(date) {
+    const occupied = new Set();
+    appointments
+      .filter(a => a.date === date && (a.status === 'confirmado' || !a.status))
+      .forEach(a => {
+        const svc = services.find(s => s.id === a.serviceId);
+        if (!svc) return;
+        const idx = ALL_SLOTS.indexOf(a.time);
+        if (idx === -1) return;
+        const count = slotsNeeded(svc.duration);
+        for (let i = 0; i < count; i++) {
+          if (idx + i < ALL_SLOTS.length) occupied.add(ALL_SLOTS[idx + i]);
+        }
+      });
+    return occupied;
+  }
+
+  function getAvailableSlots(date, service) {
+    if (!date || !service) return [];
+    const occupied = getOccupiedSlots(date);
+    const needed = slotsNeeded(service.duration);
+    return ALL_SLOTS.filter((_, idx) => {
+      for (let i = 0; i < needed; i++) {
+        if (idx + i >= ALL_SLOTS.length) return false;
+        if (occupied.has(ALL_SLOTS[idx + i])) return false;
+      }
+      return true;
+    });
+  }
+
+  async function handleConfirm() {
+    if (!selectedService || !selectedDate || !selectedTime || !name.trim() || !phone.trim() || !email.trim()) return;
+    const newAppt = {
+      serviceId: selectedService.id,
+      serviceName: selectedService.name,
+      price: selectedService.price,
+      duration: selectedService.duration,
+      date: selectedDate,
+      time: selectedTime,
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      status: 'confirmado',
+      createdAt: new Date().toISOString(),
+    };
+    await addDoc(collection(db, 'appointments'), newAppt);
+
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      client_name: name.trim(),
+      client_phone: phone.trim(),
+      service_name: selectedService.name,
+      date: formatDateLong(selectedDate),
+      time: selectedTime,
+    }, EMAILJS_PUBLIC_KEY).catch(() => {});
+
+    setShowConfirmation(true);
+  }
+
+  function resetForm() {
+    setStep(1);
+    setSelectedServiceId(null);
+    setSelectedDate('');
+    setSelectedTime('');
+    setName('');
+    setPhone('');
+    setEmail('');
+    setShowConfirmation(false);
+  }
+
+  if (showAdmin) {
+    return <Admin onBack={() => setShowAdmin(false)} />;
+  }
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-black">
-        {/* Header con logo APRIL */}
-        <div className={`bg-gradient-to-br from-purple-600 via-purple-500 to-pink-400 text-white shadow-2xl relative overflow-hidden sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'p-3' : 'p-6'}`}>
-          <div className="absolute inset-0 bg-white opacity-5"></div>
-          <div className="max-w-md mx-auto relative z-10">
-          <div className="flex items-center gap-4 mb-3">
-          <div className={`bg-white rounded-2xl shadow-xl cursor-pointer transition-all duration-300 ${scrolled ? 'p-2' : 'p-3'}`}
-  onClick={() => setShowAdmin(true)}
->
-  <img 
-    src="/logo-april.jpg" 
-    alt="April Logo" 
-    className={`object-contain transition-all duration-300 ${scrolled ? 'w-10 h-10' : 'w-14 h-14'}`}
-  />
-</div>
-  <div>
-  <h1 className={`font-black tracking-tight transition-all duration-300 ${scrolled ? 'text-2xl' : 'text-3xl'}`}>NAILS BY APRIL</h1>
-    <p className="text-purple-100 font-medium text-lg">Reservá tu turno online</p>
-  </div>
-</div>
-            <div className="flex flex-col gap-2 mt-5 text-sm bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-xl">
-              <div className="flex items-center gap-2">
-                <MapPin size={18} className="flex-shrink-0" />
-                <span className="font-medium">Julio A. Roca 43, Resistencia, Chaco</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone size={18} className="flex-shrink-0" />
-                <span className="font-medium">3625-351595</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock size={18} className="flex-shrink-0" />
-                <span className="font-medium">Lun a Sáb • 7:00 - 13:00 hs</span>
-              </div>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400 font-medium">Cargando...</p>
         </div>
+      </div>
+    );
+  }
 
-        <div className="max-w-md mx-auto p-5 pb-8">
-          {/* Selección de Servicio */}
-          <div className="mb-8">
-          <h2 className="text-2xl font-black mb-5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 flex items-center gap-2">    Elegí tu servicio
-            </h2>
-            
-            {services.map((category) => (
-              <div key={category.id} className="mb-6">
-                <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-400 mb-4 text-center">
-                  {category.category}
-                </h3>
-                <div className="space-y-3">
-                  {category.items.map((service) => (
-                  <button
-                  key={service.name}
-                  onClick={() => setSelectedService(service.name)}
-                  className={`w-full text-left rounded-2xl transition-all transform overflow-hidden ${
-                    selectedService === service.name
-                      ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-2xl scale-105 border-3 border-white'
-                      : 'bg-white hover:shadow-xl border-2 border-purple-200 hover:scale-102'
-                  }`}
-                >
-                  {service.image && (
-                    <div className="w-full h-40 overflow-hidden">
-                      <img 
-                        src={service.image} 
-                        alt={service.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-lg">{service.name}</h4>
-                      <ChevronRight className={selectedService === service.name ? 'text-white' : 'text-purple-400'} />
-                    </div>
-                    <p className={`text-sm mb-3 ${selectedService === service.name ? 'text-pink-100' : 'text-gray-600'}`}>
-                      {service.description}
-                    </p>
-                    <div className="flex gap-4 text-sm items-center">
-                      <span className={`font-bold text-lg ${selectedService === service.name ? 'text-white' : 'text-purple-600'}`}>
-                        {service.price}
-                      </span>
-                      <span className={`${selectedService === service.name ? 'text-pink-100' : 'text-gray-500'} font-medium`}>
-                        ⏱ {service.duration}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+  // ─── Confirmation Screen ───
+  if (showConfirmation && selectedService) {
+    return (
+      <div className="min-h-screen bg-gray-950 p-4 animate-fadeIn">
+        <div className="max-w-md mx-auto bg-gray-900 rounded-3xl shadow-2xl overflow-hidden mt-8 border-2 border-gray-700">
+          <div className="bg-linear-to-br from-pink-500 via-pink-600 to-pink-700 p-8 text-white text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-white opacity-10"></div>
+            <div className="w-24 h-24 bg-gray-950 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl relative z-10 p-2">
+              <img src="/logo-april.png" alt="Logo" className="w-full h-full object-contain rounded-full" />
+            </div>
+            <h2 className="text-3xl font-black mb-2 relative z-10" style={{ fontFamily: "'Playfair Display', serif" }}>¡Turno Confirmado!</h2>
+            <p className="text-pink-100 text-lg relative z-10 font-medium">Tu reserva fue registrada con éxito</p>
           </div>
 
-          {/* Selección de Fecha y Hora */}
-          {selectedService && (
-            <div className="space-y-8">
-              <div ref={dateRef} className="scroll-mt-32">
-              <h2 className="text-2xl font-black mb-5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 flex items-center gap-2">             <span className="bg-gradient-to-r from-purple-600 to-pink-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg animate-pulse">2</span>
-                  Elegí fecha y hora
-                </h2>
-                
-                <div className="bg-white rounded-2xl p-5 mb-5 shadow-lg border-2 border-purple-200 transform transition-all hover:scale-102">
-                  <label className="block text-sm font-bold text-gray-700 mb-3">
-                    <Calendar className="inline mr-2 text-purple-600" size={20} />
-                    Fecha del turno
-                  </label>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    min={today}
-                    className="w-full p-4 border-3 border-purple-300 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-200 font-semibold text-lg transition-all"
-                  />
-                </div>
-
-                {selectedDate && (
-                  <div ref={timeRef} className="bg-white rounded-2xl p-5 shadow-lg border-2 border-purple-200 scroll-mt-32 animate-fadeIn">
-                    <label className="block text-sm font-bold text-gray-700 mb-4">
-                      <Clock className="inline mr-2 text-purple-600" size={20} />
-                      Horarios disponibles
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                    {getHorariosPorDia(selectedDate).map((time) => {
-                        const available = isTimeSlotAvailable(time);
-                        return (
-                          <button
-                            key={time}
-                            type="button"
-                            onClick={() => available && setSelectedTime(time)}
-                            disabled={!available}
-                            className={`p-4 rounded-xl font-bold text-lg transition-all transform ${
-                              selectedTime === time
-                                ? 'bg-gradient-to-r from-purple-600 to-pink-400 text-white shadow-xl scale-105'
-                                : available
-                                ? 'bg-purple-50 hover:bg-purple-100 text-gray-700 border-2 border-purple-200 hover:scale-110'
-                                : 'bg-gray-200 text-gray-400 cursor-not-allowed line-through'
-                            }`}
-                          >
-                            {time}
-                            {!available && <div className="text-xs mt-1">Ocupado</div>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {bookedSlots.length > 0 && (
-                      <p className="text-sm text-gray-600 mt-4 text-center">
-                        ⚠️ Los horarios tachados ya están reservados
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Datos del Cliente */}
-              {selectedDate && selectedTime && (
-                <div ref={customerRef} className="scroll-mt-32 animate-fadeIn">
-               <h2 className="text-2xl font-black mb-5 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 flex items-center gap-2">     <span className="bg-gradient-to-r from-purple-600 to-pink-400 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg animate-pulse">3</span>
-                    Tus datos
-                  </h2>
-                  
-                  <div className="bg-white rounded-2xl p-5 shadow-lg border-2 border-purple-200 space-y-5">
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">
-                        Nombre completo
-                      </label>
-                      <input
-                        type="text"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="Ej: María González"
-                        className="w-full p-4 border-3 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-200 text-lg transition-all"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">
-                        Teléfono / WhatsApp
-                      </label>
-                      <input
-                        type="tel"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="Ej: 3624-123456"
-                        className="w-full p-4 border-3 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-200 text-lg transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Botón Confirmar */}
-              {customerName && customerPhone && (
-                <button
-                  onClick={handleBooking}
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-purple-600 via-purple-500 to-pink-400 text-white py-6 rounded-2xl font-black text-2xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all transform animate-fadeIn disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin" size={28} />
-                      Confirmando...
-                    </>
-                  ) : (
-                    '✨ Confirmar Turno ✨'
-                  )}
-                </button>
+          <div className="p-6 space-y-4">
+            <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
+              <p className="text-sm text-gray-400 mb-1 font-semibold">💅 Servicio</p>
+              <p className="font-bold text-xl text-white">{selectedService.name}</p>
+              <p className="text-pink-400 font-semibold text-lg">${selectedService.price.toLocaleString('es-AR')} • {selectedService.duration} min</p>
+              {selectedService.description && (
+                <p className="text-sm text-gray-400 mt-2">{selectedService.description}</p>
               )}
             </div>
-          )}
+
+            <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
+              <p className="text-sm text-gray-400 mb-1 font-semibold">📅 Fecha y Hora</p>
+              <p className="font-bold text-lg text-white capitalize">{formatDateLong(selectedDate)}</p>
+              <p className="text-pink-400 font-bold text-xl">{selectedTime} hs</p>
+            </div>
+
+            <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
+              <p className="text-sm text-gray-400 mb-1 font-semibold">👤 Cliente</p>
+              <p className="font-bold text-lg text-white">{name}</p>
+              <p className="text-gray-400 font-medium">{phone}</p>
+            </div>
+
+            <div className="bg-pink-500/10 border border-pink-500/30 rounded-2xl p-5">
+              <p className="text-sm text-pink-200 leading-relaxed">
+                <strong>⏰ Importante:</strong> Te esperamos 5 minutos antes de tu turno.
+                Si necesitás cancelar, avisanos por WhatsApp con anticipación.
+              </p>
+            </div>
+
+            <a
+              href={`https://wa.me/5493625351595?text=${encodeURIComponent(`¡Hola April! Reservé un turno 💅\n\n✨ *${selectedService.name}*\n📅 ${formatDateLong(selectedDate)} a las *${selectedTime} hs*\n👤 ${name}\n📱 ${phone}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-3 bg-green-600 hover:bg-green-500 text-white py-5 rounded-2xl font-black text-xl transition-all shadow-lg hover:shadow-green-500/25"
+            >
+              💬 Enviar confirmación por WhatsApp
+            </a>
+
+            <button
+              onClick={resetForm}
+              className="w-full bg-linear-to-r from-pink-500 to-pink-600 text-white py-5 rounded-2xl font-black text-xl hover:from-pink-400 hover:to-pink-500 transition-all shadow-lg hover:shadow-pink-500/25"
+            >
+              💅 Volver al menú
+            </button>
+          </div>
         </div>
 
         <style>{`
           @keyframes fadeIn {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
           }
-          .animate-fadeIn {
-            animation: fadeIn 0.5s ease-out;
-          }
+          .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
         `}</style>
       </div>
     );
   }
+
+  // ─── Main App ───
+  return (
+    <div className="min-h-screen bg-gray-950">
+      {/* Header */}
+      <header className="bg-gray-900 text-white shadow-2xl sticky top-0 z-50 py-4 px-4 border-b border-pink-500/20">
+        <div className="max-w-lg mx-auto flex items-center gap-4">
+          <div
+            className="bg-gray-950 rounded-2xl shadow-xl cursor-pointer hover:scale-105 transition-transform p-2"
+            onClick={() => setShowAdmin(true)}
+          >
+            <img
+              src="/logo-april.png"
+              alt="Nails By April"
+              className="w-12 h-12 object-contain rounded-xl"
+            />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-pink-400" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Nails By April
+            </h1>
+            <p className="text-gray-400 font-medium text-sm">Reservá Tu Turno Online</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Info bar */}
+      <div className="bg-gray-900/80 border-b border-gray-800 px-4 py-3">
+        <div className="max-w-lg mx-auto flex flex-col gap-2 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-pink-400">📍</span>
+            <span className="font-medium text-gray-300">Julio A. Roca 43, Resistencia, Chaco</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-pink-400">📱</span>
+            <a href="https://wa.me/5493625351595" target="_blank" rel="noopener noreferrer" className="font-medium text-gray-300 hover:text-green-400 transition-colors">
+              3625-351595
+            </a>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-pink-400">🕐</span>
+            <span className="font-medium text-gray-300">Lun a Sáb • 9:00 - 13:00 hs</span>
+          </div>
+        </div>
+      </div>
+
+      <main className="max-w-lg mx-auto p-4 pb-12">
+        {/* Step 1 */}
+        <section className="mb-8">
+          <h2 className="text-xl font-black mb-4 text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-pink-600 flex items-center gap-2">
+            <span className="bg-linear-to-r from-pink-500 to-pink-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-lg">1</span>
+            Elegí tu servicio
+          </h2>
+          <div className="space-y-3">
+            {services.map(svc => (
+              <button
+                key={svc.id}
+                onClick={() => { setSelectedServiceId(svc.id); setStep(2); setSelectedDate(''); setSelectedTime(''); }}
+                className={`w-full text-left rounded-2xl transition-all transform overflow-hidden border-2 ${
+                  selectedServiceId === svc.id
+                    ? 'bg-linear-to-r from-pink-500/20 to-pink-600/10 border-pink-500 shadow-xl shadow-pink-500/10 scale-[1.02]'
+                    : 'bg-gray-800 border-gray-700 hover:border-gray-600 hover:shadow-lg'
+                }`}
+              >
+                {SERVICE_IMAGES[svc.name] && (
+                  <div className="relative h-36 overflow-hidden">
+                    <img
+                      src={SERVICE_IMAGES[svc.name]}
+                      alt={svc.name}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: SERVICE_IMAGE_POSITION[svc.name] || 'center 40%' }}
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-gray-800 via-gray-800/30 to-transparent" />
+                    {selectedServiceId === svc.id && <div className="absolute inset-0 bg-pink-500/10" />}
+                  </div>
+                )}
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-lg text-white">{svc.name}</h4>
+                    <span className={`font-bold text-lg ${selectedServiceId === svc.id ? 'text-pink-300' : 'text-pink-400'}`}>
+                      ${svc.price.toLocaleString('es-AR')}
+                    </span>
+                  </div>
+                  {svc.description && (
+                    <p className={`text-sm mb-2 ${selectedServiceId === svc.id ? 'text-pink-200/70' : 'text-gray-400'}`}>
+                      {svc.description}
+                    </p>
+                  )}
+                  <span className={`text-sm font-medium ${selectedServiceId === svc.id ? 'text-pink-300' : 'text-gray-500'}`}>
+                    ⏱ {svc.duration} min
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Step 2 */}
+        {step >= 2 && selectedService && (
+          <section ref={dateRef} className="mb-8 scroll-mt-32 animate-fadeIn">
+            <h2 className="text-xl font-black mb-4 text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-pink-600 flex items-center gap-2">
+              <span className="bg-linear-to-r from-pink-500 to-pink-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-lg">2</span>
+              Elegí fecha y hora
+            </h2>
+
+            <div className="bg-gray-800 rounded-2xl p-5 mb-4 border-2 border-gray-700 transition-all hover:border-gray-600">
+              <label className="block text-sm font-bold text-pink-400 mb-3">📅 Fecha del turno</label>
+              <input
+                type="date"
+                value={selectedDate}
+                min={today}
+                onChange={e => {
+                  const d = new Date(e.target.value + 'T00:00:00');
+                  if (d.getDay() === 0) {
+                    setDateError('No trabajamos los domingos. Por favor elegí otro día.');
+                    return;
+                  }
+                  setDateError('');
+                  setSelectedDate(e.target.value);
+                  setSelectedTime('');
+                  setStep(3);
+                }}
+                className="w-full p-4 bg-gray-900 border-2 border-gray-600 rounded-xl text-pink-100 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/30 font-semibold text-lg transition-all"
+              />
+              {dateError && <p className="text-red-400 text-sm mt-2 font-medium">⚠️ {dateError}</p>}
+            </div>
+
+            {selectedDate && (
+              <div ref={timeRef} className="bg-gray-800 rounded-2xl p-5 border-2 border-gray-700 scroll-mt-32 animate-fadeIn">
+                <label className="block text-sm font-bold text-pink-400 mb-4">🕐 Horarios disponibles</label>
+                {(() => {
+                  const available = new Set(getAvailableSlots(selectedDate, selectedService));
+                  const allFull = ALL_SLOTS.every(s => !available.has(s));
+                  if (allFull) return <p className="text-gray-500 text-center py-4">No hay horarios disponibles para esta fecha.</p>;
+                  return (
+                    <div className="grid grid-cols-3 gap-3">
+                      {ALL_SLOTS.map(slot => {
+                        const isAvailable = available.has(slot);
+                        const isSelected = selectedTime === slot;
+                        return (
+                          <button
+                            key={slot}
+                            disabled={!isAvailable}
+                            onClick={() => { if (isAvailable) { setSelectedTime(slot); setStep(4); } }}
+                            className={`p-3.5 rounded-xl font-bold text-base transition-all transform ${
+                              isSelected
+                                ? 'bg-linear-to-r from-pink-500 to-pink-600 text-white shadow-xl scale-105'
+                                : isAvailable
+                                  ? 'bg-gray-900 hover:bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500/50 hover:scale-105'
+                                  : 'bg-gray-900/40 text-gray-600 border border-gray-800 cursor-not-allowed line-through'
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Step 3 */}
+        {step >= 4 && selectedTime && (
+          <section ref={customerRef} className="mb-8 scroll-mt-32 animate-fadeIn">
+            <h2 className="text-xl font-black mb-4 text-transparent bg-clip-text bg-linear-to-r from-pink-400 to-pink-600 flex items-center gap-2">
+              <span className="bg-linear-to-r from-pink-500 to-pink-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-lg">3</span>
+              Tus datos
+            </h2>
+            <div className="bg-gray-800 rounded-2xl p-5 border-2 border-gray-700 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-pink-400 mb-2">Nombre completo</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: María García"
+                  className="w-full p-4 bg-gray-900 border-2 border-gray-600 rounded-xl text-pink-100 placeholder-gray-500 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/30 text-lg transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-pink-400 mb-2">Teléfono / WhatsApp</label>
+                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Ej: 3624-123456"
+                  className="w-full p-4 bg-gray-900 border-2 border-gray-600 rounded-xl text-pink-100 placeholder-gray-500 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/30 text-lg transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-pink-400 mb-2">Correo electrónico</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Ej: maria@gmail.com"
+                  className="w-full p-4 bg-gray-900 border-2 border-gray-600 rounded-xl text-pink-100 placeholder-gray-500 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/30 text-lg transition-all"
+                />
+                <p className="text-xs text-gray-600 mt-2">📧 Te enviaremos un recordatorio el día anterior a tu turno</p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Confirm Button */}
+        {name.trim() && phone.trim() && email.trim() && selectedService && selectedDate && selectedTime && (
+          <button
+            onClick={handleConfirm}
+            className="w-full bg-linear-to-r from-pink-500 via-pink-500 to-pink-600 text-white py-6 rounded-2xl font-black text-2xl shadow-2xl hover:from-pink-400 hover:to-pink-500 hover:scale-105 transition-all transform animate-fadeIn hover:shadow-pink-500/30"
+          >
+            💅 Confirmar Turno
+          </button>
+        )}
+      </main>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+      `}</style>
+    </div>
+  );
+}

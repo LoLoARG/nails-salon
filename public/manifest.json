@@ -1,0 +1,29 @@
+{
+  "name": "Nails By April",
+  "short_name": "Nails April",
+  "description": "Sistema de turnos online",
+  "start_url": "/?admin",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#ec4899",
+  "icons": [
+    {
+      "src": "/logo-april.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-april.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Panel Admin",
+      "short_name": "Admin",
+      "url": "/?admin",
+      "icons": [{ "src": "/logo-april.png", "sizes": "192x192" }]
+    }
+  ]
+}
