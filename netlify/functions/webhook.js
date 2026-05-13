@@ -64,6 +64,26 @@ export const handler = async (event) => {
         });
 
         console.log('Email enviado a April');
+
+        // Confirmar turno a la clienta
+        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: 'service_thyqgmt',
+            template_id: 'template_c92x74o',
+            user_id: 'aVxKa83w3EQOULaoR',
+            template_params: {
+              to_email: turnoData.clienteEmail,
+              client_name: turnoData.clienteNombre,
+              service_name: turnoData.servicio,
+              date: turnoData.fecha,
+              time: turnoData.hora,
+            },
+          }),
+        });
+
+        console.log('Email de confirmación enviado a la clienta:', turnoData.clienteEmail);
       }
     }
 
