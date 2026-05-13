@@ -116,7 +116,7 @@ export default function App() {
   function getOccupiedSlots(date, daySlots) {
     const occupied = new Set();
     appointments
-      .filter(a => a.date === date && (a.status === 'confirmado' || !a.status))
+      .filter(a => a.date === date)
       .forEach(a => {
         const svc = services.find(s => s.id === a.serviceId);
         if (!svc) return;
