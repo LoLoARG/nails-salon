@@ -43,6 +43,27 @@ export const handler = async (event) => {
         });
 
         console.log('Turno confirmado en Firebase:', turnoData.appointmentId);
+
+        // Notificar a April por email via EmailJS REST API
+        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: 'service_thyqgmt',
+            template_id: 'template_r5qj0e8',
+            user_id: 'aVxKa83w3EQOULaoR',
+            template_params: {
+              client_name: turnoData.clienteNombre,
+              client_phone: turnoData.clienteTelefono,
+              service_name: turnoData.servicio,
+              date: turnoData.fecha,
+              time: turnoData.hora,
+              status: '✅ Seña recibida y confirmada',
+            },
+          }),
+        });
+
+        console.log('Email enviado a April');
       }
     }
 

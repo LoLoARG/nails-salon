@@ -69,8 +69,14 @@ function slotsNeeded(durationMin) {
   return Math.ceil(durationMin / 30);
 }
 
+// Detecta si corre como PWA instalada (Android Chrome o iOS Safari)
+const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+              window.navigator.standalone === true;
+
 export default function Admin({ onBack }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('admin_auth') === 'true');
+  const [isAuthenticated, setIsAuthenticated] = useState(() =>
+    isPWA || localStorage.getItem('admin_auth') === 'true'
+  );
   const [password, setPassword] = useState('');
   const [appointments, setAppointments] = useState([]);
   const [services, setServices] = useState([]);
@@ -392,7 +398,7 @@ export default function Admin({ onBack }) {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-bold text-white text-sm">{entry.appt.name}</span>
+                        <span className="font-bold text-gray-900 text-sm">{entry.appt.name}</span>
                         <span className="text-gray-400 text-xs ml-2">— {entry.appt.serviceName}</span>
                         {isPending && <span className="ml-2 text-xs font-bold text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">⏳ Seña pendiente</span>}
                       </div>
@@ -451,7 +457,7 @@ export default function Admin({ onBack }) {
             >
               Ingresar
             </button>
-            {onBack && (
+            {onBack && !isPWA && (
               <button type="button" onClick={onBack} className="w-full mt-3 text-gray-500 hover:text-gray-300 py-2 text-sm transition-colors">
                 ← Volver a turnos
               </button>
@@ -477,16 +483,18 @@ export default function Admin({ onBack }) {
               <p className="text-gray-400 text-xs">Nails By April</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {onBack && (
-              <button onClick={onBack} className="text-gray-400 hover:text-white text-sm transition-colors hidden sm:block">
-                ← Volver
+          {!isPWA && (
+            <div className="flex items-center gap-3">
+              {onBack && (
+                <button onClick={onBack} className="text-gray-400 hover:text-purple-600 text-sm transition-colors hidden sm:block">
+                  ← Volver
+                </button>
+              )}
+              <button onClick={handleLogout} className="text-gray-400 hover:text-purple-600 text-sm transition-colors">
+                Salir
               </button>
-            )}
-            <button onClick={handleLogout} className="text-gray-400 hover:text-white text-sm transition-colors">
-              Salir
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -532,7 +540,7 @@ export default function Admin({ onBack }) {
                 ←
               </button>
               <div className="text-center flex-1">
-                <p className="text-lg font-bold text-white capitalize">{formatDateFull(selectedDate)}</p>
+                <p className="text-lg font-bold text-gray-900 capitalize">{formatDateFull(selectedDate)}</p>
                 <p className="text-sm text-gray-500">
                   {dayAppointments.length} turno{dayAppointments.length !== 1 ? 's' : ''} reservado{dayAppointments.length !== 1 ? 's' : ''}
                 </p>
@@ -572,7 +580,7 @@ export default function Admin({ onBack }) {
                     <div className="p-5 space-y-4">
                       <div>
                         <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Cliente</p>
-                        <p className="text-xl font-bold text-white">{selectedAppt.name}</p>
+                        <p className="text-xl font-bold text-gray-900">{selectedAppt.name}</p>
                         <p className="text-gray-400 mt-1">📱 {selectedAppt.phone}</p>
                       </div>
                       <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
@@ -636,7 +644,7 @@ export default function Admin({ onBack }) {
                           >
                             <div className="flex items-center gap-3">
                               <span className="bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-lg">{appt.time}</span>
-                              <span className="text-sm font-semibold text-white">{appt.name}</span>
+                              <span className="text-sm font-semibold text-gray-900">{appt.name}</span>
                             </div>
                             <span className="text-xs text-gray-500">{appt.serviceName}</span>
                           </div>
@@ -672,7 +680,7 @@ export default function Admin({ onBack }) {
             <div className="max-w-3xl">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-bold text-white">📋 Turnos confirmados</h2>
+                  <h2 className="text-xl font-bold text-gray-900">📋 Turnos confirmados</h2>
                   <p className="text-gray-500 text-sm mt-1">{upcoming.length} turno{upcoming.length !== 1 ? 's' : ''} próximo{upcoming.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
@@ -694,7 +702,7 @@ export default function Admin({ onBack }) {
                         {/* Encabezado de día */}
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-base font-bold text-white capitalize">
+                            <h3 className="text-base font-bold text-gray-900 capitalize">
                               {formatDateFull(date)}
                             </h3>
                             {label && (
@@ -712,7 +720,7 @@ export default function Admin({ onBack }) {
                                 <span className={`text-sm font-black px-3 py-1.5 rounded-lg shrink-0 ${appt.status === 'pendiente' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-600 text-white'}`}>{appt.time}</span>
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <p className="font-bold text-white">{appt.name}</p>
+                                    <p className="font-bold text-gray-900">{appt.name}</p>
                                     {appt.status === 'pendiente' && <span className="text-xs font-bold text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">⏳ Seña pendiente</span>}
                                   </div>
                                   <p className={`text-sm ${appt.status === 'pendiente' ? 'text-blue-400' : 'text-purple-500'}`}>{appt.serviceName}</p>
@@ -770,7 +778,7 @@ export default function Admin({ onBack }) {
               const renderSvc = (svc) => (
                 <div key={svc.id} className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center justify-between hover:border-gray-200 transition-all">
                   <div>
-                    <p className="font-bold text-white">{svc.name}</p>
+                    <p className="font-bold text-gray-900">{svc.name}</p>
                     {svc.description && <p className="text-sm text-gray-400">{svc.description}</p>}
                     <p className="text-sm text-purple-600 font-semibold mt-1">{svc.duration} min — ${svc.price.toLocaleString('es-AR')}</p>
                   </div>
@@ -863,7 +871,7 @@ export default function Admin({ onBack }) {
         {activeTab === 'recordatorios' && (
           <div className="max-w-2xl">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-white mb-1">🔔 Recordatorios de mañana</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">🔔 Recordatorios de mañana</h2>
               <p className="text-gray-500 text-sm">Turnos del {formatDateFull(tomorrowStr)} — Enviá recordatorio por WhatsApp con un clic</p>
             </div>
 
@@ -917,7 +925,7 @@ export default function Admin({ onBack }) {
 
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-white">👥 {allClients.length} cliente{allClients.length !== 1 ? 's' : ''}</h2>
+              <h2 className="text-xl font-bold text-gray-900">👥 {allClients.length} cliente{allClients.length !== 1 ? 's' : ''}</h2>
               <button
                 onClick={() => setShowClientForm(v => !v)}
                 className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all"
@@ -1005,7 +1013,7 @@ export default function Admin({ onBack }) {
                               {isSelected && <span className="text-white text-xs font-bold">✓</span>}
                             </div>
                             <div>
-                              <p className="font-bold text-white text-sm">{client.name} ⭐</p>
+                              <p className="font-bold text-gray-900 text-sm">{client.name} ⭐</p>
                               <p className="text-gray-500 text-xs">📱 {client.phone}</p>
                             </div>
                           </div>
@@ -1066,7 +1074,7 @@ export default function Admin({ onBack }) {
                               {isSelected && <span className="text-white text-xs font-bold">✓</span>}
                             </div>
                             <div>
-                              <p className="font-bold text-white text-sm">{client.name}{client.fiel && ' ⭐'}</p>
+                              <p className="font-bold text-gray-900 text-sm">{client.name}{client.fiel && ' ⭐'}</p>
                               <p className="text-gray-500 text-xs">📱 {client.phone} • {client.visits} visita{client.visits !== 1 ? 's' : ''}</p>
                             </div>
                           </div>
@@ -1161,6 +1169,19 @@ export default function Admin({ onBack }) {
         )}
 
       </div>
+
+      {/* Footer */}
+      <footer className="text-center py-4 text-sm text-gray-400">
+        Desarrollado por{' '}
+        <a
+          href="https://www.instagram.com/codelo.web"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-purple-500 hover:text-pink-500 font-semibold transition-colors"
+        >
+          CodeLo
+        </a>
+      </footer>
 
       {/* ─── Bottom nav mobile ─── */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">

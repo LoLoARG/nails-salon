@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, addDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import emailjs from '@emailjs/browser';
 import Admin from './admin';
 
 const DEFAULT_SERVICES = [
@@ -159,6 +160,22 @@ export default function App() {
     };
     const docRef = await addDoc(collection(db, 'appointments'), newAppt);
     setSavedApptId(docRef.id);
+
+    // Notificar a April del nuevo turno
+    emailjs.send(
+      'service_thyqgmt',
+      'template_r5qj0e8',
+      {
+        client_name: name.trim(),
+        client_phone: phone.trim(),
+        service_name: selectedService.name,
+        date: selectedDate,
+        time: selectedTime,
+        status: '⏳ Pendiente de pago (seña)',
+      },
+      { publicKey: 'aVxKa83w3EQOULaoR' }
+    ).catch(() => {}); // no bloquear el flujo si falla el email
+
     setShowConfirmation(true);
   }
 
@@ -523,6 +540,18 @@ export default function App() {
           </button>
         )}
       </main>
+
+      <footer className="text-center py-6 text-sm text-gray-400">
+        Desarrollado por{' '}
+        <a
+          href="https://www.instagram.com/codelo.web"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-purple-500 hover:text-pink-500 font-semibold transition-colors"
+        >
+          CodeLo
+        </a>
+      </footer>
 
       <style>{`
         @keyframes fadeIn {
