@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx netlify:*)",
+      "Bash(netlify dev:*)",
+      "Bash(curl -s http://localhost:8888/)",
+      "Read(//c/Users/Usuario/Desktop/nails-salon-main/nails-salon/**)",
+      "Bash(netlify status:*)",
+      "Bash(netlify sites:list)",
+      "Bash(netlify link:*)",
+      "Bash(netlify env:list)",
+      "Bash(netlify deploy:*)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
+    ]
+  }
+}
