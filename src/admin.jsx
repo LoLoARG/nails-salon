@@ -37,6 +37,15 @@ const AFTERNOON_SLOTS = ALL_SLOTS.filter(s => parseInt(s) >= 17);
 
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 const DIAS_LABEL = { lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles', jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo' };
+const DAY_NAMES = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+
+function getDaySlots(dateStr, horariosConfig) {
+  if (!dateStr) return [];
+  const dayName = DAY_NAMES[new Date(dateStr + 'T00:00:00').getDay()];
+  const cfg = horariosConfig[dayName];
+  if (!cfg || !cfg.enabled) return [];
+  return [...(cfg.slots || [])].sort();
+}
 
 const DEFAULT_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30'];
 const DEFAULT_HORARIOS = {
@@ -182,22 +191,25 @@ export default function Admin({ onBack }) {
   const dayAppointments = appointments.filter(a => a.date === selectedDate);
 
   // Build a map: slot -> appointment (if any)
-  function getSlotMap() {
+  function getSlotMap(daySlots) {
     const map = {};
     dayAppointments.forEach(appt => {
-      const idx = ALL_SLOTS.indexOf(appt.time);
+      const idx = daySlots.indexOf(appt.time);
       if (idx === -1) return;
       const count = slotsNeeded(appt.duration);
       for (let i = 0; i < count; i++) {
-        if (idx + i < ALL_SLOTS.length) {
-          map[ALL_SLOTS[idx + i]] = { appt, isStart: i === 0, span: count };
+        if (idx + i < daySlots.length) {
+          map[daySlots[idx + i]] = { appt, isStart: i === 0, span: count };
         }
       }
     });
     return map;
   }
 
-  const slotMap = getSlotMap();
+  const daySlots = getDaySlots(selectedDate, localHorarios);
+  const slotMap = getSlotMap(daySlots);
+  const morningSlots = daySlots.filter(s => parseInt(s) < 13);
+  const afternoonSlots = daySlots.filter(s => parseInt(s) >= 17);
 
   // Stats
   const todayStr = new Date().toISOString().split('T')[0];
@@ -565,8 +577,13 @@ export default function Admin({ onBack }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Timeline */}
               <div className="space-y-6">
-                {renderTimeBlock('☀️ Mañana — 9:30 a 12:30', MORNING_SLOTS)}
-                {renderTimeBlock('🌙 Tarde — 17:30 a 21:00', AFTERNOON_SLOTS)}
+                {morningSlots.length > 0 && renderTimeBlock('☀️ Mañana', morningSlots)}
+                {afternoonSlots.length > 0 && renderTimeBlock('🌙 Tarde', afternoonSlots)}
+                {daySlots.length === 0 && (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+                    <p className="text-gray-400">April no trabaja este día</p>
+                  </div>
+                )}
               </div>
 
               {/* Detail panel */}
